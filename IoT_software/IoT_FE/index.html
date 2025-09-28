@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Dashboard</title>
+
+  <!-- Thư viện CSS/JS ngoài:
+       - Bootstrap: layout & component styles
+       - FontAwesome: icon
+       - Chart.js: vẽ biểu đồ
+       Chú ý: sử dụng CDN nên cần Internet để load. -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* --- Toàn trang --- */
+    body { background-color: #f4f6f9; overflow: hidden;}
+    .navbar { box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+    /* Card tổng (thể hiện 3 cảm biến: nhiệt, ẩm, ánh sáng) */
+    .card { border: none; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
+    .card.temp { background: #ff7675; color: white; }       /* ô nhiệt độ */
+    .card.humidity { background: #74b9ff; color: white; }   /* ô độ ẩm */
+    .card.light { background: #ffeaa7; color: #2d3436; }    /* ô ánh sáng */
+
+    /* Card cho biểu đồ */
+    .chart-card {
+      border-radius: 15px;
+      background: #ffffff;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Thiết kế ô thiết bị (bên phải) */
+    .device-card {
+      background: #f8f9fa;
+      border-radius: 15px;
+      height: 143px;
+      padding: 15px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 16px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+      transition: opacity 0.3s ease;
+    }
+    .device-card i { font-size: 40px; }
+    .device-card span { font-weight: bold; font-size: 20px; }
+
+    /* Nút bấm */
+    .btn { padding: 6px 15px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+    .inactive { opacity: 0.45; } /* class dùng để làm mờ nút/hiện trạng không hoạt động */
+
+    /* 🔥 Hiệu ứng icon của thiết bị */
+    /* Quạt: thêm class .spin sẽ quay icon liên tục */
+    .fa-fan.spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Đèn: class .on làm sáng và glow */
+    .fa-lightbulb.on { color: #f1c40f; text-shadow: 0 0 15px #f39c12; }
+
+    /* Điều hòa: hiệu ứng "thổi" */
+    .fa-snowflake.blow {
+      animation: blow 0.5s ease-in-out infinite alternate;
+      color: #00cec9;
+    }
+    @keyframes blow { from { transform: translateX(0); } to { transform: translateX(5px); } }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <!-- Logo / brand -->
+      <a class="navbar-brand fw-bold" href="index.html"><i class="fa-solid fa-microchip"></i> IoT CONTROL</a>
+
+      <!-- Menu điều hướng -->
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link active" href="index.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="dataSensor.html">Data Sensor</a></li>
+        <li class="nav-item"><a class="nav-link" href="actionHistory.html">Action History</a></li>
+        <li class="nav-item"><a class="nav-link" href="profile.html">Profile</a></li>
+      </ul>
+
+      <!-- Thông tin người dùng (tên + avatar) -->
+      <div class="d-flex align-items-center ms-3">
+        <span class="fw-bold text-white me-2">Phùng Bá Huy</span>
+        <img src="https://i.pinimg.com/1200x/08/de/cf/08decf273c35ee596e00188ec3d6d341.jpg"
+             class="rounded-circle" width="35" height="35" alt="Avatar">
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <!-- Tiêu đề trang -->
+    <h2 class="mb-4 fw-bold"><i class="fa-solid fa-gauge-high"></i> Dashboard</h2>
+
+      <!-- 3 ô hiển thị cảm biến (Nhiệt độ, Độ ẩm, Ánh sáng) -->
+      <!-- Mỗi ô có id riêng: temp, humidity, light -> được JS cập nhật giá trị realtime -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card temp text-center p-3">
+            <i class="fa-solid fa-temperature-high"></i>
+            <h5>Nhiệt độ</h5>
+            <p id="temp" class="fs-3 fw-bold">-- °C</p> <!-- giá trị sẽ thay đổi bằng JS -->
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card humidity text-center p-3">
+            <i class="fa-solid fa-droplet"></i>
+            <h5>Độ ẩm</h5>
+            <p id="humidity" class="fs-3 fw-bold">-- %</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card light text-center p-3">
+            <i class="fa-solid fa-sun"></i>
+            <h5>Ánh sáng</h5>
+            <p id="light" class="fs-3 fw-bold">-- lux</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biểu đồ + Danh sách thiết bị -->
+      <div class="row">
+        <!-- Biểu đồ lớn chiếm 8 cột -->
+        <div class="col-md-8">
+          <div class="card chart-card p-3">
+            <h6 class="fw-bold mb-2"><i class="fa-solid fa-chart-line"></i> Biểu đồ cảm biến</h6>
+            <canvas id="sensorChart" height="400"></canvas> <!-- Chart.js vẽ vào đây -->
+          </div>
+        </div>
+
+        <!-- Danh sách thiết bị (sẽ render bằng JS vào div #device-list) -->
+        <div class="col-md-4">
+          <div id="device-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Các tab pane (hiện đang là content placeholder) -->
+    <!-- Lưu ý: hiện các tab này không được Bootstrap kích hoạt (chỉ là container nội dung) -->
+    <div class="tab-pane fade" id="datasensor">
+      <h3>📊 Data Sensor</h3>
+      <div id="sensor-table">Bảng Data Sensor sẽ hiển thị ở đây...</div>
+    </div>
+
+    <div class="tab-pane fade" id="actionhistory">
+      <h3>📜 Action History</h3>
+      <div id="action-table">Bảng Action History sẽ hiển thị ở đây...</div>
+    </div>
+
+    <div class="tab-pane fade" id="profile">
+      <h3>👤 Profile</h3>
+      <p>Thông tin người dùng...</p>
+    </div>
+  </div>
+
+  <!-- ------------------ SCRIPT CHÍNH (JS) ------------------ -->
+  <script>
+  // Đường dẫn gốc đến API backend (Node.js) - thay đổi nếu server deploy ở nơi khác
+  const API_ROOT = "http://localhost:4000"; // server Node.js
+
+  // Danh sách thiết bị mà UI sẽ hiển thị và điều khiển
+  // Mỗi object có: key (khớp với API/backend), label (tên hiển thị), icon (FontAwesome), effect (class hiệu ứng)
+  const devices = [
+    { key: "dieuhoa", label: "Điều hòa", icon: "fa-snowflake", effect: "blow" },
+    { key: "quat",    label: "Quạt",     icon: "fa-fan",       effect: "spin" },
+    { key: "den",     label: "Đèn",      icon: "fa-lightbulb", effect: "on" }
+  ];
+
+  // Hàm render danh sách thiết bị vào #device-list
+  // Tạo HTML cho mỗi thiết bị: icon, trạng thái, nút ON/OFF
+  function renderDevices() {
+    document.getElementById("device-list").innerHTML = devices.map(d => `
+      <div class="device-card" id="card-${d.key}">
+        <div>
+          <i class="fa-solid ${d.icon} me-2"></i>
+          <span id="status-${d.key}">OFF</span>
+          <div class="small text-muted">${d.label}</div>
+        </div>
+        <div>
+          <button class="btn btn-success inactive me-1" data-device="${d.key}" data-action="ON">ON</button>
+          <button class="btn btn-danger" data-device="${d.key}" data-action="OFF">OFF</button>
+        </div>
+      </div>
+    `).join("");
+
+    // Gắn sự kiện click cho tất cả nút ON/OFF vừa render
+    document.querySelectorAll("#device-list button").forEach(btn => {
+      btn.addEventListener("click", () => controlDevice(btn.dataset.device, btn.dataset.action));
+    });
+  }
+
+  // Wrapper fetch -> trả về JSON, ném lỗi khi status không ok
+  async function fetchJson(url, opts={}) {
+    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  // Lấy dữ liệu cảm biến từ API và cập nhật giao diện + biểu đồ
+  async function updateSensorData() {
+    try {
+      // Gọi API lấy lịch sử dữ liệu cảm biến
+      const history = await fetchJson(`${API_ROOT}/api/dataSensor/latest`);
+
+      // Nếu không có dữ liệu thì dừng
+      if (!Array.isArray(history) || history.length === 0) return;
+
+      // Lấy phần tử mới nhất (index 0 trong định dạng API giả sử trả về theo thứ tự giảm dần)
+      const latest = history[0];
+
+      // Cập nhật 3 ô hiển thị nhanh
+      document.getElementById("temp").innerText = (latest.temp ?? "--") + " °C";
+      document.getElementById("humidity").innerText = (latest.hum ?? "--") + " %";
+      document.getElementById("light").innerText = (latest.light ?? "--") + " lux";
+      
+      if (latest.tempColor)     document.querySelector(".card.temp").style.background = latest.tempColor;
+      if (latest.humColor)      document.querySelector(".card.humidity").style.background = latest.humColor;
+      if (latest.lightColor)    document.querySelector(".card.light").style.background = latest.lightColor;
+      // Lấy 10 bản ghi gần nhất để vẽ biểu đồ (chú ý đảo lại để thời gian tăng dần trên trục X)
+      const recent = history.slice(0, 10).reverse();
+
+      // labels: định dạng thời gian theo locale vi-VN, chỉ hiển thị giờ:phút
+      sensorChart.data.labels = recent.map(d =>
+        new Date(d.time).toLocaleString("vi-VN",{hour:"2-digit",minute:"2-digit"})
+      );
+
+      // datasets: lần lượt nhiệt độ, độ ẩm, ánh sáng
+      sensorChart.data.datasets[0].data = recent.map(d => d.temp);
+      sensorChart.data.datasets[1].data = recent.map(d => d.hum);
+      sensorChart.data.datasets[2].data = recent.map(d => d.light);
+
+      // Cập nhật Chart.js
+      sensorChart.update();
+    } catch (err) { 
+      // Lỗi khi gọi API (in ra console để debug)
+      console.error("❌ Sensor error:", err); 
+    }
+  }
+
+  // Lấy trạng thái ON/OFF hiện tại của các thiết bị từ backend
+  async function fetchStatuses() {
+    try {
+      const data = await fetchJson(`${API_ROOT}/api/control/status`);
+      updateDeviceUI(data);
+    } catch (err) { console.error("❌ Status error:", err); }
+  }
+
+  // Cập nhật giao diện thiết bị dựa trên object trạng thái do fetchStatuses trả về
+  // Format giả sử: { dieuhoa: { state: "ON" }, quat: { state: "OFF" }, ... }
+  function updateDeviceUI(obj) {
+    devices.forEach(d => {
+      const info = obj[d.key];                      // trạng thái thiết bị từ backend
+      const card = document.getElementById("card-"+d.key);
+      const statusEl = card.querySelector("span");  // span hiển thị ON/OFF
+      const icon = card.querySelector("i");         // icon để thêm/remove hiệu ứng
+      const [btnOn, btnOff] = card.querySelectorAll("button");
+
+      if (info?.state?.toUpperCase() === "ON") {
+        // Nếu ON: cập nhật chữ, disable trạng thái OFF (mờ nút OFF), bật hiệu ứng icon
+        statusEl.innerText = "ON";
+        btnOn.classList.remove("inactive"); btnOff.classList.add("inactive");
+        icon.classList.add(d.effect); // thêm class effect (spin/on/blow)
+      } else {
+        // Nếu OFF: ngược lại
+        statusEl.innerText = "OFF";
+        btnOff.classList.remove("inactive"); btnOn.classList.add("inactive");
+        icon.classList.remove(d.effect);
+      }
+    });
+  }
+
+  // Gửi lệnh điều khiển thiết bị lên server
+  // device: key (vd "quat"), action: "ON" hoặc "OFF"
+  async function controlDevice(device, action) {
+    try {
+      await fetchJson(`${API_ROOT}/api/control`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({device, action})
+      });
+      // Gọi lại fetchStatuses để làm UI đồng bộ với server (hoặc server có thể trả trạng thái mới)
+      fetchStatuses();
+    } catch { 
+      // Nếu lỗi: cảnh báo nhẹ, vẫn gọi được là không gây crash nhưng có thể thiết bị đã nhận lệnh.
+      console.warn("⚠️ Lệnh gửi không phản hồi, nhưng có thể thiết bị vẫn nhận được."); 
+    }
+  }
+
+// --- Khởi tạo Chart.js ---
+const sensorChart = new Chart(document.getElementById('sensorChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      { 
+        label:'Nhiệt độ (°C)', 
+        borderColor:'red', 
+        yAxisID: 'y1', 
+        data:[], 
+        fill:false, 
+        tension:0.3 
+      },
+      { 
+        label:'Độ ẩm (%)', 
+        borderColor:'blue', 
+        yAxisID: 'y1',
+        data:[], 
+        fill:false, 
+        tension:0.3 
+      },
+      { 
+        label:'Ánh sáng (lux)', 
+        borderColor:'orange', 
+        yAxisID: 'y2',
+        data:[], 
+        fill:false, 
+        tension:0.3 
+      }
+    ]
+  },
+  options: {
+    responsive:true,
+    plugins:{ legend:{ position:'top' } },
+    scales:{
+      x:{ title:{ display:true, text:"Thời gian" } },
+      y1:{
+        beginAtZero:true,
+        title:{ display:true, text:"Nhiệt độ / Độ ẩm" },
+        position: 'left'
+      },
+      y2:{
+        beginAtZero:true,
+        title:{ display:true, text:"Ánh sáng" },
+        position: 'right',
+        grid: { drawOnChartArea:false }
+      }
+    }
+  }
+});
+
+
+
+  // --- Khởi chạy khi load trang ---
+  renderDevices();        // render danh sách thiết bị
+  updateSensorData();     // lấy và hiển thị dữ liệu cảm biến lần đầu
+  fetchStatuses();        // lấy trạng thái thiết bị lần đầu
+
+  // Polling: mỗi 2 giây cập nhật dữ liệu cảm biến và trạng thái thiết bị
+  setInterval(updateSensorData, 2000);
+  setInterval(fetchStatuses, 2000);
+  </script>
+  <!-- Bootstrap JS (bundle includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
