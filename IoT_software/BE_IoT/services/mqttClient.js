@@ -6,7 +6,7 @@ const ActionHistory = require("../models/ActionHistory");
 // ======================
 // ⚡ Cấu hình MQTT Broker
 // ======================
-const mqttUrl = "mqtt://192.168.0.103:1883";
+const mqttUrl = "mqtt://192.168.180.176:1883";
 let client;
 let latestData = {}; // lưu tạm dữ liệu cảm biến trước khi ghi DB
 

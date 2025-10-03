@@ -235,6 +235,9 @@
       // Lỗi khi gọi API (in ra console để debug)
       console.error("❌ Sensor error:", err); 
     }
+    const interval = setInterval(() => {
+      clearInterval(interval);
+    }, 2000);
   }
 
   // Lấy trạng thái ON/OFF hiện tại của các thiết bị từ backend
@@ -245,45 +248,63 @@
     } catch (err) { console.error("❌ Status error:", err); }
   }
 
-  // Cập nhật giao diện thiết bị dựa trên object trạng thái do fetchStatuses trả về
-  // Format giả sử: { dieuhoa: { state: "ON" }, quat: { state: "OFF" }, ... }
-  function updateDeviceUI(obj) {
-    devices.forEach(d => {
-      const info = obj[d.key];                      // trạng thái thiết bị từ backend
-      const card = document.getElementById("card-"+d.key);
-      const statusEl = card.querySelector("span");  // span hiển thị ON/OFF
-      const icon = card.querySelector("i");         // icon để thêm/remove hiệu ứng
-      const [btnOn, btnOff] = card.querySelectorAll("button");
-
-      if (info?.state?.toUpperCase() === "ON") {
-        // Nếu ON: cập nhật chữ, disable trạng thái OFF (mờ nút OFF), bật hiệu ứng icon
-        statusEl.innerText = "ON";
-        btnOn.classList.remove("inactive"); btnOff.classList.add("inactive");
-        icon.classList.add(d.effect); // thêm class effect (spin/on/blow)
-      } else {
-        // Nếu OFF: ngược lại
-        statusEl.innerText = "OFF";
-        btnOff.classList.remove("inactive"); btnOn.classList.add("inactive");
-        icon.classList.remove(d.effect);
-      }
-    });
-  }
-
   // Gửi lệnh điều khiển thiết bị lên server
   // device: key (vd "quat"), action: "ON" hoặc "OFF"
   async function controlDevice(device, action) {
     try {
+      // ✅ Hiển thị trạng thái loading bằng icon xoay tròn trên nút được nhấn
+      const button = document.querySelector(`[data-device="${device}"][data-action="${action}"]`);
+      button.disabled = true; // Vô hiệu hóa nút
+      button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`; // Hiển thị icon xoay tròn
+
+      // Gửi yêu cầu điều khiển lên server
       await fetchJson(`${API_ROOT}/api/control`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({device, action})
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device, action }),
       });
-      // Gọi lại fetchStatuses để làm UI đồng bộ với server (hoặc server có thể trả trạng thái mới)
-      fetchStatuses();
-    } catch { 
-      // Nếu lỗi: cảnh báo nhẹ, vẫn gọi được là không gây crash nhưng có thể thiết bị đã nhận lệnh.
-      console.warn("⚠️ Lệnh gửi không phản hồi, nhưng có thể thiết bị vẫn nhận được."); 
+
+      // ✅ Gọi lại fetchStatuses để làm UI đồng bộ với trạng thái thực tế từ server
+      await fetchStatuses();
+    } catch {
+      console.warn("⚠️ Lệnh gửi không phản hồi, nhưng có thể thiết bị vẫn nhận được.");
+    } finally {
+      // ✅ Khôi phục trạng thái nút sau khi xử lý xong
+      button.disabled = false; // Bật lại nút
+      button.innerHTML = action; // Hiển thị lại ON/OFF
     }
   }
+
+// Cập nhật giao diện thiết bị dựa trên trạng thái từ server
+function updateDeviceUI(obj) {
+  devices.forEach(d => {
+    const info = obj[d.key];                      // trạng thái thiết bị từ backend
+    const card = document.getElementById("card-" + d.key);
+    const statusEl = card.querySelector("span");  // span hiển thị ON/OFF
+    const icon = card.querySelector("i");         // icon để thêm/remove hiệu ứng
+    const [btnOn, btnOff] = card.querySelectorAll("button");
+
+    if (info?.state?.toUpperCase() === "ON") {
+      // Nếu ON: cập nhật chữ, disable trạng thái OFF (mờ nút OFF), bật hiệu ứng icon
+      statusEl.innerText = "ON";
+      btnOn.classList.remove("inactive"); btnOff.classList.add("inactive");
+      icon.classList.add(d.effect); // thêm class effect (spin/on/blow)
+    } else {
+      // Nếu OFF: ngược lại
+      statusEl.innerText = "OFF";
+      btnOff.classList.remove("inactive"); btnOn.classList.add("inactive");
+      icon.classList.remove(d.effect);
+    }
+
+    // ✅ Xóa trạng thái "Loading..." (icon xoay tròn) nếu nút đang hiển thị
+    [btnOn, btnOff].forEach(btn => {
+      if (btn.innerHTML.includes("fa-spinner")) {
+        btn.innerHTML = btn.dataset.action; // Trả về trạng thái ON/OFF
+        btn.disabled = false; // Bật lại nút
+      }
+    });
+  });
+}
 
 // --- Khởi tạo Chart.js ---
 const sensorChart = new Chart(document.getElementById('sensorChart').getContext('2d'), {
@@ -340,13 +361,19 @@ const sensorChart = new Chart(document.getElementById('sensorChart').getContext(
 
 
   // --- Khởi chạy khi load trang ---
-  renderDevices();        // render danh sách thiết bị
+// --- Khởi chạy khi load trang ---
+renderDevices();  // render danh sách thiết bị
+
+// Delay 3 giây rồi mới bắt đầu lấy dữ liệu và polling
+setTimeout(() => {
   updateSensorData();     // lấy và hiển thị dữ liệu cảm biến lần đầu
   fetchStatuses();        // lấy trạng thái thiết bị lần đầu
 
   // Polling: mỗi 2 giây cập nhật dữ liệu cảm biến và trạng thái thiết bị
   setInterval(updateSensorData, 2000);
   setInterval(fetchStatuses, 2000);
+}, 2000); // 3000ms = 3 giây
+
   </script>
   <!-- Bootstrap JS (bundle includes Popper) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
