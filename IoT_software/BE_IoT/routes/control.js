@@ -38,28 +38,31 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // ✅ Lấy trạng thái gần nhất từ DB
-    const latest = await ActionHistory.findOne({ device })
-      .sort({ timestamp: -1 })
-      .lean();
+    // ✅ Delay 1 giây trước khi xử lý
+    setTimeout(async () => {
+      // ✅ Lấy trạng thái gần nhất từ DB
+      const latest = await ActionHistory.findOne({ device })
+        .sort({ timestamp: -1 })
+        .lean();
 
-    // Nếu trạng thái không đổi → trả về luôn
-    if (latest && latest.state === action) {
-      return res.json({ status: "No change" });
-    }
+      // Nếu trạng thái không đổi → trả về luôn
+      if (latest && latest.state === action) {
+        return res.json({ status: "No change" });
+      }
 
-    // ✅ Publish MQTT
-    await mqtt.publish(`esp32/${device}`, action);
+      // ✅ Publish MQTT
+      await mqtt.publish(`esp32/${device}`, action);
 
-    // ✅ Lưu vào DB để FE lấy lại được khi reload
-    const newAction = new ActionHistory({
-      device,
-      state: action,
-      timestamp: new Date(),
-    });
-    await newAction.save();
+      // ✅ Lưu vào DB để FE lấy lại được khi reload
+      const newAction = new ActionHistory({
+        device,
+        state: action,
+        timestamp: new Date(),
+      });
+      await newAction.save();
 
-    res.json({ status: "OK", device, action });
+      res.json({ status: "OK", device, action });
+    }, 1000); // Delay 1 giây
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
