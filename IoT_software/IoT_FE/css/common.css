@@ -1,7 +1,7 @@
-/* ========== COMMON STYLES - TỐI ƯU ========== */
-/* Styles chung tối ưu cho tất cả các trang */
+/* ========== STYLES CHUNG CHO TẤT CẢ CÁC TRANG ========== */
 
-/* --- Toàn trang - Tối ưu performance --- */
+/* --- Cấu hình toàn trang --- */
+/* Thiết lập nền, zoom 90%, font chữ đẹp cho toàn bộ website */
 body { 
   background-color: #f4f6f9; 
   overflow: hidden; 
@@ -9,158 +9,140 @@ body {
   transform-origin: top left; 
   width: 111%; 
   height: 111%; 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Tối ưu font stack */
-  -webkit-font-smoothing: antialiased; /* Tối ưu font rendering */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- Navbar --- */
+/* --- Thanh điều hướng --- */
+/* Tạo bóng đổ cho navbar */
 .navbar { 
   box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
 }
 
-/* --- Cards - Tối ưu --- */
+/* --- Thẻ Card --- */
+/* Bo góc và tạo bóng đổ cho các card container */
 .card { 
   border: none; 
   border-radius: 15px; 
   box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
-  /* Bỏ hiệu ứng hover - giữ giao diện tĩnh */
 }
 
-/* --- Tables - Tối ưu --- */
-.table-hover tbody tr { 
-  /* transition: background-color 0.15s ease; */ /* Tắt animation để LED không nháy */
-}
-
-.table-hover tbody tr:hover { 
-  background-color: #eaf4ff; 
-}
-
-.table th { 
-  font-weight: 500; /* Font weight nhẹ hơn */
-  border-bottom: 1px solid #dee2e6; /* Viền mỏng như cũ */
-}
-
-/* Bỏ dòng kẻ ngang giữa các hàng - Dùng !important để override Bootstrap */
-.table td, .table th {
-  border-top: none !important; /* Bỏ dòng kẻ trên */
-  border-bottom: none !important; /* Bỏ dòng kẻ dưới */
-}
-
-.table tbody tr {
-  border-bottom: none !important; /* Bỏ dòng kẻ dưới */
-  border-top: none !important; /* Bỏ dòng kẻ trên */
-}
-
-/* Override Bootstrap table borders - CSS mạnh hơn */
-.table.table-striped tbody tr {
+/* --- Bảng dữ liệu --- */
+/* Bỏ tất cả đường viền trong bảng, căn giữa dọc, padding đều */
+.table td, 
+.table th {
   border: none !important;
+  vertical-align: middle !important;
+  padding: 12px 15px !important;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.table.table-striped td, .table.table-striped th {
-  border: none !important;
+/* Tiêu đề bảng: chữ đậm, to hơn, dính khi scroll, nền đen */
+.table thead th {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.3px;
+  position: sticky;
+  top: 0;
+  background: #343a40;
+  z-index: 10;
 }
 
-/* CSS cụ thể cho table trong container */
-.table-container .table td, 
-.table-container .table th {
-  border-top: none !important;
-  border-bottom: none !important;
+/* Nội dung bảng: chữ thường, màu đen đậm */
+.table tbody td {
+  font-weight: 400;
+  color: #212529;
 }
 
-.table-container .table tbody tr {
-  border: none !important;
+/* Cột ID - nhỏ gọn 60px, căn giữa ngang và dọc, chữ đậm */
+.table thead th:first-child,
+.table tbody td:first-child {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  padding: 12px 8px !important;
 }
 
-/* Force remove all table borders */
-table.table td, table.table th {
-  border: none !important;
+/* Cột số liệu (Nhiệt độ, Độ ẩm, Ánh sáng) - căn giữa cả header và body */
+.table thead th:nth-child(2),
+.table thead th:nth-child(3),
+.table thead th:nth-child(4),
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4) {
+  text-align: center !important;
 }
 
-/* --- Table Container với Scroll --- */
-/* Container cho bảng với thanh cuộn khi cần */
+/* Giá trị số đậm hơn một chút để dễ đọc */
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4) {
+  font-weight: 500;
+}
+
+/* Cột thời gian - độ rộng cố định 200px, căn giữa */
+.table thead th:last-child,
+.table tbody td:last-child {
+  width: 200px !important;
+  min-width: 200px !important;
+  text-align: center !important;
+}
+
+/* Hiệu ứng khi di chuột qua dòng - đổi màu nền nhẹ */
+.table-hover tbody tr:hover {
+  background-color: #eaf4ff;
+}
+
+.table-hover tbody tr:hover td {
+  background-color: #f8f9fa !important;
+  transition: background-color 0.15s ease;
+}
+
+/* Tạo hiệu ứng sọc ngựa vằn - dòng lẻ màu xám nhạt, dòng chẵn màu trắng */
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(0,0,0,0.02) !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #ffffff !important;
+}
+
+/* --- Container bảng có thanh cuộn --- */
+/* Tạo container chiều cao tối đa 600px, có thanh cuộn dọc khi dữ liệu nhiều */
 .table-container {
-  max-height: 600px; /* Chiều cao tối đa 600px */
-  overflow-y: auto; /* Cuộn dọc khi cần */
-  border: 1px solid #dee2e6; /* Viền cho container */
-  border-radius: 8px; /* Bo góc */
-}
-
-/* Tối ưu scrollbar cho WebKit browsers */
-.table-container::-webkit-scrollbar {
-  width: 8px; /* Độ rộng scrollbar */
-}
-
-.table-container::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Màu nền track */
-  border-radius: 4px; /* Bo góc track */
-}
-
-.table-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1; /* Màu thumb */
-  border-radius: 4px; /* Bo góc thumb */
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8; /* Màu thumb khi hover */
-}
-
-/* Đảm bảo bảng chiếm full width trong container */
-.table-container .table {
-  margin-bottom: 0; /* Bỏ margin bottom */
-  border: none; /* Bỏ border của table */
-}
-
-/* Fix cho header khi scroll */
-.table-container .table thead th {
-  position: sticky; /* Header dính */
-  top: 0; /* Dính ở top */
-  background: #343a40; /* Màu nền header */
-  z-index: 10; /* Layer cao */
-  border-bottom: 1px solid #dee2e6; /* Viền mỏng như cũ */
-  margin-right: 8px; /* Tạo khoảng cách cho scrollbar */
-}
-
-/* Tạo scrollbar chỉ cho tbody, không cho header */
-.table-container {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
   position: relative;
 }
 
+/* Bảng hiển thị dạng block để có thể cuộn */
 .table-container .table {
   display: block;
+  margin-bottom: 0;
+  border: none;
 }
 
+/* Header bảng hiển thị block, chiếm full width */
 .table-container .table thead {
   display: block;
   width: 100%;
 }
 
+/* Body bảng có scroll riêng, chiều cao tối đa 560px */
 .table-container .table tbody {
   display: block;
-  max-height: 560px; /* Chiều cao tbody = 600px - 40px header */
+  max-height: 560px;
   overflow-y: auto;
   width: 100%;
 }
 
-.table-container .table tbody::-webkit-scrollbar {
-  width: 8px;
-}
-
-.table-container .table tbody::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.table-container .table tbody::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.table-container .table tbody::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Đảm bảo các cột có cùng độ rộng giữa header và tbody */
+/* Đảm bảo các cột trong header và body có cùng độ rộng */
 .table-container .table thead tr,
 .table-container .table tbody tr {
   display: table;
@@ -173,17 +155,46 @@ table.table td, table.table th {
   display: table-cell;
 }
 
-/* --- Pagination --- */
+/* Tùy chỉnh thanh cuộn - độ rộng 8px */
+.table-container::-webkit-scrollbar,
+.table-container .table tbody::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Nền thanh cuộn màu xám nhạt */
+.table-container::-webkit-scrollbar-track,
+.table-container .table tbody::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+/* Thanh kéo màu xám */
+.table-container::-webkit-scrollbar-thumb,
+.table-container .table tbody::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+/* Thanh kéo màu đậm hơn khi hover */
+.table-container::-webkit-scrollbar-thumb:hover,
+.table-container .table tbody::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* --- Phân trang --- */
+/* Bo góc các nút phân trang, khoảng cách giữa các nút */
 .pagination .page-link { 
   border-radius: 8px !important; 
   margin: 0 2px; 
 }
 
+/* Nút trang đang active - màu xanh dương */
 .pagination .page-item.active .page-link { 
   background: #3498db; 
   border-color: #3498db; 
 }
 
+/* Hiển thị thông tin số trang - nền trắng, viền bo góc */
 .pagination-info { 
   background: #fff; 
   padding: 6px 10px; 
@@ -191,37 +202,34 @@ table.table td, table.table th {
   border-radius: 8px; 
 }
 
-/* --- Buttons - Tối ưu --- */
+/* --- Nút bấm --- */
+/* Tạo nút bo tròn, chữ đậm, có vị trí tương đối để chứa loading spinner */
 .btn { 
   padding: 6px 15px; 
   border-radius: 20px; 
   font-size: 14px; 
   font-weight: 600; 
-  /* transition: all 0.2s ease; */ /* Tắt animation để LED không nháy */
-  position: relative; /* Cho loading spinner */
+  position: relative;
 }
 
-/* Bỏ hiệu ứng hover cho buttons */
-/* .btn:hover { 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
-} */
-
+/* Hiệu ứng khi click nút */
 .btn:active { 
-  transform: translateY(0); /* Hiệu ứng click */
+  transform: translateY(0);
 }
 
+/* Nút không hoạt động - mờ đi */
 .inactive { 
   opacity: 0.45; 
-  /* pointer-events: none; */ /* Bỏ comment để buttons có thể click được */
 }
 
+/* Nút đang loading - mờ đi, không cho click */
 .btn.loading { 
   opacity: 0.7; 
   cursor: not-allowed; 
-  pointer-events: none; /* Tắt interaction khi loading */
+  pointer-events: none;
 }
 
+/* Icon loading spinner khi nút đang xử lý */
 .btn.loading::after { 
   content: ""; 
   position: absolute; 
@@ -230,18 +238,19 @@ table.table td, table.table th {
   border: 2px solid transparent; 
   border-top: 2px solid currentColor; 
   border-radius: 50%; 
-  /* animation: spin 1s linear infinite; */ /* Tắt animation để LED không nháy */ 
   right: 8px; 
   top: 50%; 
   transform: translateY(-50%); 
 }
 
+/* Hiệu ứng quay tròn cho loading spinner */
 @keyframes spin { 
   0% { transform: translateY(-50%) rotate(0deg); } 
   100% { transform: translateY(-50%) rotate(360deg); } 
 }
 
-/* --- Sort buttons --- */
+/* --- Nút sắp xếp --- */
+/* Nút sort trong header bảng - không nền, chữ trắng, icon lớn */
 .sort-btn {
   background: none; 
   color: #fff; 
@@ -253,124 +262,57 @@ table.table td, table.table th {
   padding: 0;
 }
 
+/* Nút sort khi hover - màu xám nhạt */
 .sort-btn:hover { 
   color: #ccc; 
 }
 
-/* --- Status badges --- */
+/* --- Nhãn trạng thái --- */
+/* Badge hiển thị trạng thái ON/OFF của thiết bị */
 .status-badge { 
   font-size: 12px; 
   padding: 4px 8px; 
   border-radius: 12px; 
 }
 
+/* Badge trạng thái ON - màu xanh lá */
 .status-on { 
   background-color: #d4edda; 
   color: #155724; 
   border: 1px solid #c3e6cb; 
 }
 
+/* Badge trạng thái OFF - màu đỏ */
 .status-off { 
   background-color: #f8d7da; 
   color: #721c24; 
   border: 1px solid #f5c6cb; 
 }
 
+/* Icon thiết bị - khoảng cách bên phải */
 .device-icon { 
   margin-right: 8px; 
 }
 
-/* --- Căn chỉnh độ rộng cột ID và các cột khác --- */
-/* Cột ID nhỏ gọn, các cột khác rộng hơn */
-.table thead th:first-child,
-.table tbody td:first-child {
-  width: 60px !important; /* Cột ID chỉ 60px */
-  min-width: 60px !important;
-  max-width: 60px !important;
-  text-align: center !important; /* Căn giữa */
-  font-weight: 600; /* Đậm hơn cho ID */
-  vertical-align: middle !important; /* Căn giữa dọc */
-  padding: 12px 8px !important; /* Padding đều */
-}
-
-/* Căn chỉnh tất cả các ô trong bảng */
-.table thead th,
-.table tbody td {
-  vertical-align: middle !important; /* Căn giữa dọc tất cả các ô */
-  padding: 12px 15px !important; /* Padding đều cho tất cả ô */
-  font-size: 14px; /* Font size đồng nhất */
-  line-height: 1.5; /* Line height thoáng hơn */
-}
-
-/* Header: Đậm và to hơn một chút */
-.table thead th {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  letter-spacing: 0.3px; /* Khoảng cách chữ */
-  text-transform: none; /* Không viết hoa */
-}
-
-/* Body: Font weight bình thường */
-.table tbody td {
-  font-weight: 400;
-  color: #212529; /* Màu đen đậm */
-}
-
-/* Cột số (nhiệt độ, độ ẩm, ánh sáng) căn giữa - cả header và body */
-.table thead th:nth-child(2),
-.table thead th:nth-child(3),
-.table thead th:nth-child(4),
-.table tbody td:nth-child(2),
-.table tbody td:nth-child(3),
-.table tbody td:nth-child(4) {
-  text-align: center !important;
-}
-
-/* Body của cột số đậm hơn một chút */
-.table tbody td:nth-child(2),
-.table tbody td:nth-child(3),
-.table tbody td:nth-child(4) {
-  font-weight: 500; /* Đậm vừa cho số */
-}
-
-/* Cột thời gian (cột cuối) - căn giữa cả header và body */
-.table thead th:last-child,
-.table tbody td:last-child {
-  width: 200px !important; /* Cột thời gian 200px */
-  min-width: 200px !important;
-  text-align: center !important; /* Căn giữa */
-}
-
-/* Hover effect cho row */
-.table-hover tbody tr:hover td {
-  background-color: #f8f9fa !important;
-  transition: background-color 0.15s ease;
-}
-
-/* Zebra striping đẹp hơn */
-.table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(0,0,0,0.02) !important;
-}
-
-.table-striped tbody tr:nth-of-type(even) {
-  background-color: #ffffff !important;
-}
-
-/* --- Responsive --- */
+/* --- Responsive cho màn hình nhỏ --- */
+/* Khi màn hình nhỏ hơn 576px (mobile) */
 @media (max-width: 576px) {
+  /* Chuyển filter sang dạng cột dọc */
   .d-flex.gap-2 { 
     flex-direction: column; 
   }
+  
+  /* Ô tìm kiếm chiếm full width */
   #keywordFilter { 
     width: 100% !important; 
   }
   
-  /* Mobile: Cột ID nhỏ hơn nữa */
+  /* Cột ID nhỏ hơn trên mobile - 45px, chữ nhỏ hơn */
   .table thead th:first-child,
   .table tbody td:first-child {
     width: 45px !important;
     min-width: 45px !important;
     max-width: 45px !important;
-    font-size: 12px; /* Font nhỏ hơn trên mobile */
+    font-size: 12px;
   }
 }
