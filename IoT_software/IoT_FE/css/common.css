@@ -1,0 +1,291 @@
+/* ========== COMMON STYLES - TỐI ƯU ========== */
+/* Styles chung tối ưu cho tất cả các trang */
+
+/* --- Toàn trang - Tối ưu performance --- */
+body { 
+  background-color: #f4f6f9; 
+  overflow: hidden; 
+  transform: scale(0.9); 
+  transform-origin: top left; 
+  width: 111%; 
+  height: 111%; 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Tối ưu font stack */
+  -webkit-font-smoothing: antialiased; /* Tối ưu font rendering */
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Navbar --- */
+.navbar { 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
+}
+
+/* --- Cards - Tối ưu --- */
+.card { 
+  border: none; 
+  border-radius: 15px; 
+  box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
+  /* Bỏ hiệu ứng hover - giữ giao diện tĩnh */
+}
+
+/* --- Tables - Tối ưu --- */
+.table-hover tbody tr { 
+  /* transition: background-color 0.15s ease; */ /* Tắt animation để LED không nháy */
+}
+
+.table-hover tbody tr:hover { 
+  background-color: #eaf4ff; 
+}
+
+.table th { 
+  font-weight: 500; /* Font weight nhẹ hơn */
+  border-bottom: 1px solid #dee2e6; /* Viền mỏng như cũ */
+}
+
+/* Bỏ dòng kẻ ngang giữa các hàng - Dùng !important để override Bootstrap */
+.table td, .table th {
+  border-top: none !important; /* Bỏ dòng kẻ trên */
+  border-bottom: none !important; /* Bỏ dòng kẻ dưới */
+}
+
+.table tbody tr {
+  border-bottom: none !important; /* Bỏ dòng kẻ dưới */
+  border-top: none !important; /* Bỏ dòng kẻ trên */
+}
+
+/* Override Bootstrap table borders - CSS mạnh hơn */
+.table.table-striped tbody tr {
+  border: none !important;
+}
+
+.table.table-striped td, .table.table-striped th {
+  border: none !important;
+}
+
+/* CSS cụ thể cho table trong container */
+.table-container .table td, 
+.table-container .table th {
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.table-container .table tbody tr {
+  border: none !important;
+}
+
+/* Force remove all table borders */
+table.table td, table.table th {
+  border: none !important;
+}
+
+/* --- Table Container với Scroll --- */
+/* Container cho bảng với thanh cuộn khi cần */
+.table-container {
+  max-height: 600px; /* Chiều cao tối đa 600px */
+  overflow-y: auto; /* Cuộn dọc khi cần */
+  border: 1px solid #dee2e6; /* Viền cho container */
+  border-radius: 8px; /* Bo góc */
+}
+
+/* Tối ưu scrollbar cho WebKit browsers */
+.table-container::-webkit-scrollbar {
+  width: 8px; /* Độ rộng scrollbar */
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Màu nền track */
+  border-radius: 4px; /* Bo góc track */
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1; /* Màu thumb */
+  border-radius: 4px; /* Bo góc thumb */
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; /* Màu thumb khi hover */
+}
+
+/* Đảm bảo bảng chiếm full width trong container */
+.table-container .table {
+  margin-bottom: 0; /* Bỏ margin bottom */
+  border: none; /* Bỏ border của table */
+}
+
+/* Fix cho header khi scroll */
+.table-container .table thead th {
+  position: sticky; /* Header dính */
+  top: 0; /* Dính ở top */
+  background: #343a40; /* Màu nền header */
+  z-index: 10; /* Layer cao */
+  border-bottom: 1px solid #dee2e6; /* Viền mỏng như cũ */
+  margin-right: 8px; /* Tạo khoảng cách cho scrollbar */
+}
+
+/* Tạo scrollbar chỉ cho tbody, không cho header */
+.table-container {
+  position: relative;
+}
+
+.table-container .table {
+  display: block;
+}
+
+.table-container .table thead {
+  display: block;
+  width: 100%;
+}
+
+.table-container .table tbody {
+  display: block;
+  max-height: 560px; /* Chiều cao tbody = 600px - 40px header */
+  overflow-y: auto;
+  width: 100%;
+}
+
+.table-container .table tbody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container .table tbody::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container .table tbody::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container .table tbody::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Đảm bảo các cột có cùng độ rộng giữa header và tbody */
+.table-container .table thead tr,
+.table-container .table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.table-container .table thead tr th,
+.table-container .table tbody tr td {
+  display: table-cell;
+}
+
+/* --- Pagination --- */
+.pagination .page-link { 
+  border-radius: 8px !important; 
+  margin: 0 2px; 
+}
+
+.pagination .page-item.active .page-link { 
+  background: #3498db; 
+  border-color: #3498db; 
+}
+
+.pagination-info { 
+  background: #fff; 
+  padding: 6px 10px; 
+  border: 1px solid #dee2e6; 
+  border-radius: 8px; 
+}
+
+/* --- Buttons - Tối ưu --- */
+.btn { 
+  padding: 6px 15px; 
+  border-radius: 20px; 
+  font-size: 14px; 
+  font-weight: 600; 
+  /* transition: all 0.2s ease; */ /* Tắt animation để LED không nháy */
+  position: relative; /* Cho loading spinner */
+}
+
+/* Bỏ hiệu ứng hover cho buttons */
+/* .btn:hover { 
+  transform: translateY(-1px); 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+} */
+
+.btn:active { 
+  transform: translateY(0); /* Hiệu ứng click */
+}
+
+.inactive { 
+  opacity: 0.45; 
+  /* pointer-events: none; */ /* Bỏ comment để buttons có thể click được */
+}
+
+.btn.loading { 
+  opacity: 0.7; 
+  cursor: not-allowed; 
+  pointer-events: none; /* Tắt interaction khi loading */
+}
+
+.btn.loading::after { 
+  content: ""; 
+  position: absolute; 
+  width: 16px; 
+  height: 16px; 
+  border: 2px solid transparent; 
+  border-top: 2px solid currentColor; 
+  border-radius: 50%; 
+  /* animation: spin 1s linear infinite; */ /* Tắt animation để LED không nháy */ 
+  right: 8px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+}
+
+@keyframes spin { 
+  0% { transform: translateY(-50%) rotate(0deg); } 
+  100% { transform: translateY(-50%) rotate(360deg); } 
+}
+
+/* --- Sort buttons --- */
+.sort-btn {
+  background: none; 
+  color: #fff; 
+  border: none; 
+  cursor: pointer; 
+  font-size: 20px; 
+  margin-left: 4px;
+  vertical-align: middle; 
+  padding: 0;
+}
+
+.sort-btn:hover { 
+  color: #ccc; 
+}
+
+/* --- Status badges --- */
+.status-badge { 
+  font-size: 12px; 
+  padding: 4px 8px; 
+  border-radius: 12px; 
+}
+
+.status-on { 
+  background-color: #d4edda; 
+  color: #155724; 
+  border: 1px solid #c3e6cb; 
+}
+
+.status-off { 
+  background-color: #f8d7da; 
+  color: #721c24; 
+  border: 1px solid #f5c6cb; 
+}
+
+.device-icon { 
+  margin-right: 8px; 
+}
+
+/* --- Responsive --- */
+@media (max-width: 576px) {
+  .d-flex.gap-2 { 
+    flex-direction: column; 
+  }
+  #keywordFilter { 
+    width: 100% !important; 
+  }
+}
