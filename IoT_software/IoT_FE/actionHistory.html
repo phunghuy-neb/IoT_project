@@ -3,73 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Action History</title>
-  <!-- Bootstrap -->
+  <title>Action History</title> <!-- Tiêu đề trang lịch sử hành động -->
+  
+  <!-- CSS Files -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    /* ================== CSS CHUNG ================== */
-    body { background: #f4f6f9; }
-    .table-hover tbody tr:hover { background-color: #eaf4ff; }
-
-    /* --- Pagination --- */
-    .pagination .page-link { border-radius: 8px !important; margin: 0 2px; }
-    .pagination .page-item.active .page-link {
-      background-color: #3498db; border-color: #3498db; color: #fff;
-      box-shadow: 0 2px 4px rgba(52, 152, 219, 0.25);
-    }
-    .pagination .page-link:hover:not(.active) { background-color: #e7f3ff; border-color: #3498db; color: #2980b9; }
-    .pagination .page-item.disabled .page-link { background-color: #f8f9fa; color: #adb5bd; cursor: not-allowed; }
-
-    .pagination-info {
-      background: #fff; padding: 6px 10px;
-      border: 1px solid #dee2e6; border-radius: 8px;
-    }
-
-    /* --- Badge trạng thái --- */
-    .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 12px; }
-    .status-on    { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .status-off   { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-    .device-icon { margin-right: 8px; }
-
-    /* Responsive small screens */
-    @media (max-width: 576px) {
-      .d-flex.gap-2 { flex-direction: column; }
-      #keywordFilter { width: 100% !important; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/common.css">
 </head>
 <body>
-
-  <!-- ================= 1. NAVBAR ================= -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="index.html">
-        <i class="fa-solid fa-microchip"></i> IoT CONTROL
-      </a>
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="index.html">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="dataSensor.html">Data Sensor</a></li>
-        <li class="nav-item"><a class="nav-link active" href="actionHistory.html">Action History</a></li>
-        <li class="nav-item"><a class="nav-link" href="profile.html">Profile</a></li>
-      </ul>
-      <!-- User info -->
-      <div class="d-flex align-items-center ms-3">
-        <span class="fw-bold text-white me-2">Phùng Bá Huy</span>
-        <img src="https://i.pinimg.com/1200x/08/de/cf/08decf273c35ee596e00188ec3d6d341.jpg"
-             class="rounded-circle" width="35" height="35" alt="Avatar">
-      </div>
-    </div>
-  </nav>
+  <!-- Navbar -->
+  <div id="navbar-container"></div>
 
   <div class="container py-4">
-
-    <!-- ================= 2. BỘ LỌC TÌM KIẾM ================= -->
+    <!-- Bộ lọc tìm kiếm -->
     <h3 class="fw-bold mb-3"><i class="fa-solid fa-list"></i> Action History</h3>
     <div class="d-flex gap-2 mb-3 align-items-center flex-wrap">
-      <!-- Chọn thiết bị (value 'all' để khớp với logic JS) -->
+      <!-- Chọn thiết bị -->
       <select id="deviceFilter" class="form-select w-auto">
         <option value="all">Tất cả</option>
         <option value="den">Đèn</option>
@@ -91,225 +40,47 @@
       <button id="search-btn" class="btn btn-primary">Tìm kiếm</button>
     </div>
 
-    <!-- ================= 3. BẢNG DỮ LIỆU ================= -->
+    <!-- Bảng dữ liệu -->
     <div class="card">
       <div class="card-body p-0">
-        <table class="table table-striped table-hover mb-0">
-          <thead class="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>🔌 Thiết bị</th>
-              <th>⚡ Trạng thái</th>
-              <th>⏱ Thời gian</th>
-            </tr>
-          </thead>
-          <tbody id="data-body"></tbody>
-        </table>
+        <div class="table-container">
+          <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>🔌 Thiết bị</th>
+                <th>⚡ Trạng thái</th>
+                <th>⏱ Thời gian</th>
+              </tr>
+            </thead>
+            <tbody id="data-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-  <!-- ================= 4. PHÂN TRANG ================= -->
-  <div class="d-flex justify-content-between align-items-center mt-4">
-    <!-- Page Size bên trái -->
-    <div class="pagination-info">
-      Page limit:
-      <select id="page-size" class="form-select d-inline-block ms-2" style="width:auto;">
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="30">30</option>
-        <option value="40">40</option>
-        <option value="50">50</option>
-      </select>
+    <!-- Phân trang -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+      <!-- Page Size bên trái -->
+      <div class="pagination-info" id="page-limit-box"></div>
+
+      <!-- Phân trang ở giữa -->
+      <nav class="flex-grow-1 d-flex justify-content-center">
+        <ul class="pagination mb-0" id="pagination"></ul>
+      </nav>
+
+      <!-- Cột phải rỗng để cân bằng -->
+      <div style="width:200px"></div>
     </div>
-
-    <!-- Phân trang ở giữa -->
-    <nav class="flex-grow-1 d-flex justify-content-center">
-      <ul class="pagination mb-0" id="pagination"></ul>
-    </nav>
-
-    <!-- Cột phải rỗng để cân bằng -->
-    <div style="width:200px"></div>
   </div>
 
-  </div>
-
-  <!-- ================= 5. SCRIPT (TỔ CHỨC RÕ RÀNG) ================= -->
-  <script>
-    'use strict';
-
-    /* ================== CONSTANTS ================== */
-    const API_URL = 'http://localhost:4000/api/actionHistory/filter';
-
-    // Map tên & icon (dùng chung trong render)
-    const DEVICE_NAMES = { den: 'Đèn', quat: 'Quạt', dieuhoa: 'Điều hòa' };
-    const DEVICE_ICONS = { den: 'fa-lightbulb', quat: 'fa-fan', dieuhoa: 'fa-snowflake' };
-
-    /* ================== STATE ================== */
-    let currentPage = 1;
-    let pageSize = 10;
-    let currentDevice = 'all';
-    let currentState = 'all';
-    let currentSearch = '';
-    let totalPages = 1;
-
-    /* ================== DOM REFERENCES ================== */
-    const el = {
-      deviceFilter: document.getElementById('deviceFilter'),
-      stateFilter: document.getElementById('stateFilter'),
-      keyword: document.getElementById('keywordFilter'),
-      searchBtn: document.getElementById('search-btn'),
-      dataBody: document.getElementById('data-body'),
-      pagination: document.getElementById('pagination'),
-      pageSizeSelect: document.getElementById('page-size')
-    };
-
-    /* ================== HELPERS ================== */
-    function formatDateDisplay(input) {
-      if (!input) return '-';
-      const d = new Date(input);
-      if (isNaN(d)) return '-';
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yy = String(d.getFullYear()).slice(-2);
-      const HH = String(d.getHours()).padStart(2, '0');
-      const Min = String(d.getMinutes()).padStart(2, '0');
-      const SS = String(d.getSeconds()).padStart(2, '0');
-      return `${dd}/${mm}/${yy} ${HH}:${Min}:${SS}`;
-    }
-
-    /* ================== API ================== */
-    async function fetchActions(page = 1) {
-      try {
-        currentPage = page;
-        // Cập nhật state từ DOM nếu cần (giữ đồng bộ)
-        currentDevice = el.deviceFilter.value || 'all';
-        currentState = el.stateFilter.value || 'all';
-        currentSearch = (el.keyword.value || '').trim();
-
-        const params = new URLSearchParams({ page, pageSize });
-        if (currentDevice && currentDevice !== 'all') params.append('device', currentDevice);
-        if (currentState && currentState !== 'all') params.append('state', currentState);
-        if (currentSearch) params.append('search', currentSearch);
-
-        const res = await fetch(`${API_URL}?${params.toString()}`);
-        if (!res.ok) {
-          const txt = await res.text();
-          console.error('API error:', txt);
-          el.dataBody.innerHTML = `<tr><td colspan="4" class="text-center small text-danger">Lỗi API: ${txt}</td></tr>`;
-          return;
-        }
-
-        const json = await res.json();
-        const data = Array.isArray(json.data) ? json.data : [];
-        totalPages = Math.max(1, json.totalPages || 1);
-
-        renderTable(data, page);
-        renderPagination(page, totalPages);
-
-      } catch (err) {
-        console.error('Fetch actions error:', err);
-        el.dataBody.innerHTML = `<tr><td colspan="4" class="text-center small text-danger">Lỗi khi tải dữ liệu</td></tr>`;
-      }
-    }
-
-    /* ================== RENDERERS ================== */
-    function renderTable(data, page) {
-      const startIndex = (page - 1) * pageSize;
-      if (!data || !data.length) {
-        el.dataBody.innerHTML = `<tr><td colspan="4" class="text-center small">Không có dữ liệu phù hợp</td></tr>`;
-        return;
-      }
-
-      const rows = data.map((rec, idx) => {
-        const id = startIndex + idx + 1;
-        const deviceLabel = DEVICE_NAMES[rec.device] || rec.device || '-';
-        const icon = DEVICE_ICONS[rec.device] || 'fa-question';
-        const state = rec.state || '-';
-        const statusClass = state === 'ON' ? 'status-on' : 'status-off';
-        const timeText = rec.timeStr || formatDateDisplay(rec.timestamp);
-
-        return `
-          <tr>
-            <td><strong>${id}</strong></td>
-            <td><i class="fas ${icon} device-icon text-primary"></i><strong>${deviceLabel}</strong></td>
-            <td><span class="status-badge ${statusClass}">${state}</span></td>
-            <td><small class="text-muted">${timeText}</small></td>
-          </tr>`;
-      }).join('');
-
-      el.dataBody.innerHTML = rows;
-    }
-
-    function renderPagination(page, total) {
-      const pagination = el.pagination;
-      if (!pagination) return;
-      let html = '';
-
-      // Prev
-      html += `<li class="page-item ${page === 1 ? 'disabled' : ''}">` +
-              `<a class="page-link" href="#" onclick="goToPage(${page - 1});return false;">&laquo;</a></li>`;
-
-      const pageItem = (p) => `<li class="page-item ${p === page ? 'active' : ''}">` +
-                              `<a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a></li>`;
-
-      if (total <= 7) {
-        for (let p = 1; p <= total; p++) html += pageItem(p);
-      } else {
-        html += pageItem(1);
-
-        const left = page - 2;
-        const right = page + 2;
-
-        if (left > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        const start = Math.max(2, left);
-        const end = Math.min(total - 1, right);
-        for (let p = start; p <= end; p++) html += pageItem(p);
-        if (end < total - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        html += pageItem(total);
-      }
-
-      // Next
-      html += `<li class="page-item ${page === total ? 'disabled' : ''}">` +
-              `<a class="page-link" href="#" onclick="goToPage(${page + 1});return false;">&raquo;</a></li>`;
-
-      pagination.innerHTML = html;
-    }
-
-    /* ================== NAV HELPERS ================== */
-    // expose goToPage to global scope for pagination links (can be refactored later)
-    function goToPage(p) {
-      p = Math.max(1, Math.min(totalPages, parseInt(p) || 1));
-      fetchActions(p);
-    }
-    // attach to window so inline onclick in pagination works
-    window.goToPage = goToPage;
-
-    /* ================== EVENTS ================== */
-    el.searchBtn.addEventListener('click', () => fetchActions(1));
-
-    el.keyword.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); fetchActions(1); }
-    });
-
-    el.deviceFilter.addEventListener('change', () => fetchActions(1));
-    el.stateFilter.addEventListener('change', () => fetchActions(1));
-
-    el.pageSizeSelect.addEventListener('change', (e) => {
-      pageSize = parseInt(e.target.value) || 10;
-      fetchActions(1);
-    });
-
-    /* ================== INIT ================== */
-    (function init() {
-      // đảm bảo select mặc định là 'all'
-      if (!el.deviceFilter.value) el.deviceFilter.value = 'all';
-      if (!el.stateFilter.value) el.stateFilter.value = 'all';
-      el.pageSizeSelect.value = String(pageSize);
-
-      // tải lần đầu
-      fetchActions(1);
-    })();
-
-  </script>
+  <!-- JavaScript Files -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pagination.js"></script>
+  <script src="js/actionHistory.js"></script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

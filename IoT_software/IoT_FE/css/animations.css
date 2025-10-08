@@ -1,0 +1,80 @@
+/* ========== ANIMATIONS & EFFECTS ========== */
+
+/* --- Device Icons Animations --- */
+/* Quạt: thêm class .spin sẽ quay icon liên tục */
+.fa-fan.spin { 
+  animation: spin 1s linear infinite; 
+}
+
+@keyframes spin { 
+  from { transform: rotate(0deg); } 
+  to { transform: rotate(360deg); } 
+}
+
+/* Đèn: class .on làm sáng và glow - TẮT HIỆU ỨNG NHÁY */
+.fa-lightbulb.on { 
+  color: #f1c40f; 
+  /* text-shadow: 0 0 15px #f39c12; */ /* Tắt hiệu ứng glow để không nháy */
+}
+
+/* Điều hòa: hiệu ứng "thổi" */
+.fa-snowflake.blow {
+  animation: blow 0.5s ease-in-out infinite alternate;
+  color: #00cec9;
+}
+
+@keyframes blow { 
+  from { transform: translateX(0); } 
+  to { transform: translateX(5px); } 
+}
+
+/* --- Loading Spinner --- */
+.fa-spinner.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- Hover Effects --- */
+.device-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.btn:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* --- Fade Transitions --- */
+.card {
+  transition: all 0.3s ease;
+}
+
+.device-card {
+  transition: all 0.3s ease;
+}
+
+/* --- Pulse Animation for Status - TẮT HIỆU ỨNG NHÁY --- */
+.status-on {
+  /* animation: pulse-green 2s infinite; */ /* Tắt hiệu ứng nháy */
+}
+
+.status-off {
+  /* animation: pulse-red 2s infinite; */ /* Tắt hiệu ứng nháy */
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(21, 87, 36, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(21, 87, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(21, 87, 36, 0); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(114, 28, 36, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(114, 28, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(114, 28, 36, 0); }
+}

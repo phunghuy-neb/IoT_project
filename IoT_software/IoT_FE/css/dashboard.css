@@ -1,0 +1,53 @@
+/* ========== DASHBOARD SPECIFIC STYLES ========== */
+
+/* --- Sensor Cards --- */
+.card.temp { 
+  background: #ff7675; 
+  color: white; 
+}
+
+.card.humidity { 
+  background: #74b9ff; 
+  color: white; 
+}
+
+.card.light { 
+  background: #ffeaa7; 
+  color: #2d3436; 
+}
+
+/* --- Chart Card --- */
+.chart-card {
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Device Cards --- */
+.device-card {
+  background: #f8f9fa;
+  border-radius: 15px;
+  height: 143px;
+  padding: 15px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+  transition: opacity 0.3s ease;
+}
+
+.device-card.disconnected {
+  opacity: 0.5;
+  background: #e9ecef;
+}
+
+.device-card i { 
+  font-size: 40px; 
+}
+
+.device-card span { 
+  font-weight: bold; 
+  font-size: 20px; 
+}

@@ -2,305 +2,64 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Data Sensor</title>
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- FontAwesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <style>
-    /* ========== STYLE (giữ nguyên ý tưởng gốc) ========== */
-    body { background: #f4f6f9; } /* nền */
-    .table-hover tbody tr:hover { background-color: #eaf4ff; } /* hover hàng */
-    .pagination .page-link { border-radius: 8px !important; margin: 0 2px; } /* style phân trang */
-    .pagination .page-item.active .page-link { background: #3498db; border-color: #3498db; } /* active page */
-    .pagination-info { background: #fff; padding: 6px 10px; border: 1px solid #dee2e6; border-radius: 8px; } /* info box */
-    th.sortable { cursor: pointer; user-select: none; } /* có thể sort (nếu cần) */
-
-    /* style cho nút sort (gốc) */
-    .sort-btn {
-      background: none; color: #fff; border: none; cursor: pointer; font-size: 20px; margin-left: 4px;
-      vertical-align: middle; padding: 0;
-    }
-    .sort-btn:hover { color: #ccc; }
-  </style>
+  <title>Data Sensor</title> <!-- Tiêu đề trang dữ liệu cảm biến -->
+  
+  <!-- CSS Files -->
+  <!-- Các file CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"> <!-- Font Awesome icons -->
+  <link rel="stylesheet" href="css/common.css"> <!-- CSS chung -->
 </head>
 <body>
+  <!-- Navbar -->
+  <div id="navbar-container"></div>
 
-  <!-- ========== 1. NAVBAR + HEADER ========== -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary"> <!-- thanh điều hướng -->
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="index.html"><i class="fa-solid fa-microchip"></i> IoT CONTROL</a>
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="index.html">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link active" href="dataSensor.html">Data Sensor</a></li>
-        <li class="nav-item"><a class="nav-link" href="actionHistory.html">Action History</a></li>
-        <li class="nav-item"><a class="nav-link" href="profile.html">Profile</a></li>
-      </ul>
-      <div class="d-flex align-items-center ms-3">
-        <span class="fw-bold text-white me-2">Phùng Bá Huy</span> <!-- tên hiển thị -->
-        <img src="https://i.pinimg.com/1200x/08/de/cf/08decf273c35ee596e00188ec3d6d341.jpg" class="rounded-circle" width="35" height="35"> <!-- avatar -->
-      </div>
-    </div>
-  </nav>
-
-  <!-- ========== 2. FILTERS (UI) ========== -->
   <div class="container py-4">
     <h3 class="fw-bold"><i class="fa-solid fa-database"></i> Data Sensor</h3>
 
-    <div class="d-flex gap-2 mb-3 align-items-center"> <!-- vùng filter -->
-      <select id="filter-type" class="form-select w-auto"> <!-- chọn loại sensor -->
+    <!-- Filters -->
+    <div class="d-flex gap-2 mb-3 align-items-center">
+      <select id="filter-type" class="form-select w-auto">
         <option value="all">Tất cả</option>
         <option value="temp">Nhiệt độ</option>
         <option value="hum">Độ ẩm</option>
         <option value="light">Ánh sáng</option>
       </select>
 
-      <input type="text" id="search-text" class="form-control w-25" placeholder="Tìm kiếm..."> <!-- ô tìm kiếm -->
+      <input type="text" id="search-text" class="form-control w-25" placeholder="Tìm kiếm...">
 
-      <button id="search-btn" class="btn btn-primary">Tìm kiếm</button> <!-- nút tìm -->
+      <button id="search-btn" class="btn btn-primary">Tìm kiếm</button>
     </div>
 
-    <!-- ========== 3. TABLE ========== -->
+    <!-- Table -->
     <div class="card">
       <div class="card-body p-0">
-        <table class="table table-striped table-hover mb-0">
-          <thead id="table-header" class="table-dark"></thead> <!-- header build bằng JS -->
-          <tbody id="data-body"></tbody> <!-- body build bằng JS -->
-        </table>
+        <div class="table-container">
+          <table class="table table-striped table-hover mb-0">
+            <thead id="table-header" class="table-dark"></thead>
+            <tbody id="data-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- ========== 4. PAGINATION UI ========== -->
-<div class="d-flex justify-content-between align-items-center mt-4">
-  <!-- Page Limit bên trái -->
-  <div class="pagination-info" id="page-limit-box"></div>
-
-  <!-- Phân trang ở giữa -->
-  <nav class="flex-grow-1 d-flex justify-content-center">
-    <ul class="pagination mb-0" id="pagination"></ul>
-  </nav>
-
-  <!-- Cột phải rỗng để cân bằng -->
-  <div style="width:200px"></div>
-</div>
-
-
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+      <div class="pagination-info" id="page-limit-box"></div>
+      <nav class="flex-grow-1 d-flex justify-content-center">
+        <ul class="pagination mb-0" id="pagination"></ul>
+      </nav>
+      <div style="width:200px"></div>
+    </div>
   </div>
 
-<script>
-// ================= 5. SCRIPT =================
- 
-
-// ========== 5.1 STATE & CONFIG ==========
-let currentPage = 1;                    // trang hiện tại
-let totalPages = 1;                     // tổng số trang (do BE trả về)
-let rowsPerPage = 10;                   // số hàng/trang (page limit)
-let currentSortField = "time";          // field sort (mặc định: time)
-let currentSortOrder = "desc";          // order sort ('asc' | 'desc')
-
-// ========== 5.2 DOM INIT (page limit selector) ==========
-const pageLimitBox = document.getElementById("page-limit-box"); // box gắn selector
-pageLimitBox.innerHTML = `
-  Page limit:
-  <select id="limit-select" class="form-select d-inline-block mx-2" style="width:auto">
-    <option value="10">10</option>
-    <option value="20">20</option>
-    <option value="30">30</option>
-    <option value="40">40</option>
-    <option value="50">50</option>
-  </select>
-`;
-document.getElementById("limit-select").value = String(rowsPerPage); // sync select với var
-
-document.getElementById("limit-select").addEventListener("change", (e) => {
-  rowsPerPage = +e.target.value;         // update rowsPerPage
-  currentPage = 1;                       // reset về trang 1
-  fetchData();                           // lấy lại dữ liệu
-});
-
-// ========== 5.3 fetchData: gọi BE lấy dữ liệu ==========
-async function fetchData() {
-  try {
-    const type = document.getElementById("filter-type").value;    // loại sensor
-    const search = document.getElementById("search-text").value.trim(); // từ khóa
-
-    // xây params theo BE (giữ tên param gốc)
-    const params = new URLSearchParams({
-      type,
-      search,
-      sortField: currentSortField,
-      sortOrder: currentSortOrder,
-      page: currentPage,
-      limit: rowsPerPage,
-    });
-
-    const res = await fetch(`http://localhost:4000/api/dataSensor?${params}`); // gọi BE
-    if (!res.ok) {
-      console.error("Lỗi API:", res.status, await res.text()); // log lỗi nếu có
-      return;
-    }
-    const result = await res.json();
-    totalPages = result.totalPages || 1;                      // lấy totalPages từ BE
-    totalPages = Math.max(1, totalPages);                     // đảm bảo >=1
-    renderTable(result.data || []);                           // render bảng
-    renderPagination();                                       // render phân trang
-  } catch (err) {
-    console.error("❌ Lỗi load data:", err);                  // log lỗi JS
-  }
-}
-
-// ========== 5.4 renderTable: header + body ==========
-function renderTable(data) {
-  const headerRow = document.getElementById("table-header");
-  const tbody = document.getElementById("data-body");
-  tbody.innerHTML = "";                                       // clear body
-
-  const filterType = document.getElementById("filter-type").value; // hiện tại filter type
-  const colLabels = { temp: "🌡️ Nhiệt độ (°C)", hum: "💧 Độ ẩm (%)", light: "☀️ Ánh sáng (lux)" };
-
-  let cols = [];
-  if (filterType === "all") cols = ["temp", "hum", "light"];  // tất cả cột
-  else cols = [filterType];                                   // hoặc 1 cột
-
-  // xây header (bao gồm nút sort dropdown) - time không sort ở header gốc
-  let headerHtml = "<tr><th>#</th>";
-  cols.forEach(c => {
-    const active = currentSortField === c;                    // c đang active sort?
-    const label = colLabels[c];
-    headerHtml += `
-      <th>
-        ${label}
-        <div class="dropdown d-inline">
-          <button class="sort-btn dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-expanded="false">
-            ${active ? (currentSortOrder === "asc" ? '↑' : '↓') : ""}
-          </button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#" onclick="changeSort('${c}', '')">--</a></li>
-            <li><a class="dropdown-item" href="#" onclick="changeSort('${c}', 'desc')">↓</a></li>
-            <li><a class="dropdown-item" href="#" onclick="changeSort('${c}', 'asc')">↑</a></li>
-          </ul>
-        </div>
-      </th>`;                                               // giữ UI sort như gốc
-  });
-  headerHtml += `<th>⏱ Thời gian</th>`;                        // cột time (không sort)
-  headerHtml += "</tr>";
-  headerRow.innerHTML = headerHtml;                            // gắn header
-
-  // render body rows
-  if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${cols.length + 2}" class="text-center small">Không có dữ liệu phù hợp</td></tr>`; // no data
-    return;
-  }
-
-  data.forEach(rec => {
-    let row = `<td>${rec.id}</td>`;                            // id (từ BE)
-    cols.forEach(col => {
-      row += `<td>${rec[col] ?? "-"}</td>`;                    // giá trị cột (or "-")
-    });
-    row += `<td>${rec.time ? formatDateDisplay(new Date(rec.time)) : "-"}</td>`; // format thời gian
-    tbody.innerHTML += `<tr>${row}</tr>`;
-  });
-}
-
-// ========== 5.5 renderPagination ==========
-function renderPagination() {
-  const page = currentPage;
-  const total = totalPages;
-
-  const pagination = document.getElementById("pagination");
-  if (!pagination) return;
-  let html = "";
-
-  // Prev button
-  html += `<li class="page-item ${page === 1 ? "disabled" : ""}">
-             <a class="page-link" href="#" onclick="goToPage(${page - 1});return false;">&laquo;</a>
-           </li>`;
-
-  // helper nhỏ: trả về html cho 1 nút trang
-  const pageItem = (p) => `<li class="page-item ${p === page ? "active" : ""}">
-                             <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
-                           </li>`;
-
-  if (total <= 7) {
-    // nếu ít trang thì hiển thị hết
-    for (let p = 1; p <= total; p++) html += pageItem(p);
-  } else {
-    // luôn hiện trang 1
-    html += pageItem(1);
-
-    const left = page - 2;
-    const right = page + 2;
-
-    // chèn "..." nếu cần trước vùng giữa
-    if (left > 2) {
-      html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-
-    // vùng các trang quanh currentPage
-    const start = Math.max(2, left);
-    const end = Math.min(total - 1, right);
-    for (let p = start; p <= end; p++) html += pageItem(p);
-
-    // chèn "..." nếu cần sau vùng giữa
-    if (end < total - 1) {
-      html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-
-    // luôn hiện trang cuối
-    html += pageItem(total);
-  }
-
-  // Next button
-  html += `<li class="page-item ${page === total ? "disabled" : ""}">
-             <a class="page-link" href="#" onclick="goToPage(${page + 1});return false;">&raquo;</a>
-           </li>`;
-
-  pagination.innerHTML = html;
-}
-
-
-// ========== 5.6 HELPERS ==========
-function formatDateDisplay(d) {                                 // format Date -> dd/mm/yy hh:mm:ss
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(-2);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${dd}/${mm}/${yy} ${hh}:${min}:${ss}`;
-}
-
-function goToPage(p) {                                          // chuyển trang an toàn
-  if (p >= 1 && p <= totalPages) {
-    currentPage = p;
-    fetchData();
-  }
-}
-
-function changeSort(field, order) {                              // change sort từ dropdown
-  if (order === "") {
-    currentSortField = "time";                                  // reset về default theo time
-    currentSortOrder = "desc";
-  } else {
-    currentSortField = field;
-    currentSortOrder = order;
-  }
-  currentPage = 1;
-  fetchData();
-}
-
-// ========== 5.7 EVENTS BINDING ==========
-document.getElementById("search-btn").addEventListener("click", () => { currentPage = 1; fetchData(); }); // bấm tìm
-document.getElementById("search-text").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); currentPage = 1; fetchData(); }}); // enter tìm
-document.getElementById("filter-type").addEventListener("change", () => { currentPage = 1; fetchData(); }); // đổi loại sensor
-
-// ========== 5.8 INITIAL LOAD ==========
-fetchData();                                                    // load lần đầu khi mở trang
-</script>
-
-<!-- Bootstrap JS (bundle có cả Popper) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
+  <!-- JavaScript Files -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pagination.js"></script>
+  <script src="js/dataSensor.js"></script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
