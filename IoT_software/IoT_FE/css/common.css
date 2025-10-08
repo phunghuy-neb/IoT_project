@@ -280,6 +280,82 @@ table.table td, table.table th {
   margin-right: 8px; 
 }
 
+/* --- Căn chỉnh độ rộng cột ID và các cột khác --- */
+/* Cột ID nhỏ gọn, các cột khác rộng hơn */
+.table thead th:first-child,
+.table tbody td:first-child {
+  width: 60px !important; /* Cột ID chỉ 60px */
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center !important; /* Căn giữa */
+  font-weight: 600; /* Đậm hơn cho ID */
+  vertical-align: middle !important; /* Căn giữa dọc */
+  padding: 12px 8px !important; /* Padding đều */
+}
+
+/* Căn chỉnh tất cả các ô trong bảng */
+.table thead th,
+.table tbody td {
+  vertical-align: middle !important; /* Căn giữa dọc tất cả các ô */
+  padding: 12px 15px !important; /* Padding đều cho tất cả ô */
+  font-size: 14px; /* Font size đồng nhất */
+  line-height: 1.5; /* Line height thoáng hơn */
+}
+
+/* Header: Đậm và to hơn một chút */
+.table thead th {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.3px; /* Khoảng cách chữ */
+  text-transform: none; /* Không viết hoa */
+}
+
+/* Body: Font weight bình thường */
+.table tbody td {
+  font-weight: 400;
+  color: #212529; /* Màu đen đậm */
+}
+
+/* Cột số (nhiệt độ, độ ẩm, ánh sáng) căn giữa - cả header và body */
+.table thead th:nth-child(2),
+.table thead th:nth-child(3),
+.table thead th:nth-child(4),
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4) {
+  text-align: center !important;
+}
+
+/* Body của cột số đậm hơn một chút */
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4) {
+  font-weight: 500; /* Đậm vừa cho số */
+}
+
+/* Cột thời gian (cột cuối) - căn giữa cả header và body */
+.table thead th:last-child,
+.table tbody td:last-child {
+  width: 200px !important; /* Cột thời gian 200px */
+  min-width: 200px !important;
+  text-align: center !important; /* Căn giữa */
+}
+
+/* Hover effect cho row */
+.table-hover tbody tr:hover td {
+  background-color: #f8f9fa !important;
+  transition: background-color 0.15s ease;
+}
+
+/* Zebra striping đẹp hơn */
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(0,0,0,0.02) !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #ffffff !important;
+}
+
 /* --- Responsive --- */
 @media (max-width: 576px) {
   .d-flex.gap-2 { 
@@ -287,5 +363,14 @@ table.table td, table.table th {
   }
   #keywordFilter { 
     width: 100% !important; 
+  }
+  
+  /* Mobile: Cột ID nhỏ hơn nữa */
+  .table thead th:first-child,
+  .table tbody td:first-child {
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+    font-size: 12px; /* Font nhỏ hơn trên mobile */
   }
 }

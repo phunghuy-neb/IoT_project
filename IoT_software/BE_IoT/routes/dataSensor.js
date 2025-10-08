@@ -111,44 +111,46 @@ router.get("/", async (req, res) => {
       else if (type === "light") query.light = { $exists: true };
     }
 
-    // Xử lý search (giá trị, ngày, giờ)
+    // Xử lý search (chỉ giá trị số và thời gian)
     if (search && String(search).trim() !== "") {
       const tokens = search.trim().split(/\s+/);
       if (!query.$and) query.$and = [];
 
       let valueToken = null, dateToken = null, timeToken = null;
 
+      // Phân tích tokens
       if (tokens.length === 1) {
-        // chỉ có giá trị hoặc chỉ có thời gian thì mặc định là giá trị 
-        if (!isNaN(tokens[0])) {
-          valueToken = tokens[0];                 // ví dụ: "30"
-        } else if (tokens[0].includes(":")) {
-          timeToken = tokens[0];                  // ví dụ: "19:05"
-        } else if (tokens[0].includes("/")) {
-          dateToken = tokens[0];                  // ví dụ: "22/09/2025"
+        const token = tokens[0];
+        if (!isNaN(token)) {
+          valueToken = token;                     // số: "30"
+        } else if (token.includes(":")) {
+          timeToken = token;                      // giờ: "19:05"
+        } else if (token.includes("/")) {
+          dateToken = token;                      // ngày: "08/10/2025"
         }
       } else if (tokens.length === 2) {
-        // 2 phần → giá trị + ngày | giá trị + giờ | ngày + giờ
+        // 2 phần: giá trị + thời gian hoặc ngày + giờ
         if (!isNaN(tokens[0])) {
           valueToken = tokens[0];
-          if (tokens[1].includes(":")) {
-            timeToken = tokens[1];                // "30 19:05"
-          } else if (!isNaN(tokens[1])) {
-            timeToken = tokens[1];                //  "30 19"
-          }else if (tokens[1].includes("/")) {
-            dateToken = tokens[1];                // "30 22/09/2025"
-          } 
-        } else {
+          if (tokens[1].includes(":") || !isNaN(tokens[1])) {
+            timeToken = tokens[1];                // "30 19:05" hoặc "30 19"
+          } else if (tokens[1].includes("/")) {
+            dateToken = tokens[1];                // "30 08/10/2025"
+          }
+        } else if (tokens[0].includes("/")) {
           dateToken = tokens[0];
-          timeToken = tokens[1];
+          timeToken = tokens[1];                  // "08/10/2025 19:05"
         }
       } else if (tokens.length >= 3) {
-        valueToken = tokens[0];
-        dateToken = tokens[1];
-        timeToken = tokens[2];
+        // 3 phần: giá trị + ngày + giờ
+        if (!isNaN(tokens[0])) {
+          valueToken = tokens[0];
+          dateToken = tokens[1];
+          timeToken = tokens[2];                  // "30 08/10/2025 19:05"
+        }
       }
 
-      // Tìm theo giá trị
+      // Tìm theo giá trị số
       if (valueToken !== null) {
         const num = Number(valueToken);
         if (type === "all") {
@@ -164,7 +166,7 @@ router.get("/", async (req, res) => {
         else if (type === "light") query.$and.push({ light: num });
       }
 
-      // Tìm theo ngày
+      // Tìm theo ngày (dd/mm/yyyy)
       if (dateToken) {
         const d = parseDateStr(dateToken);
         if (d) {
@@ -175,11 +177,11 @@ router.get("/", async (req, res) => {
         }
       }
 
-      // Tìm theo giờ
+      // Tìm theo giờ (HH, HH:mm, HH:mm:ss)
       if (timeToken) {
         const parts = timeToken.split(":").map(p => p.padStart(2, "0"));
         if (parts.length === 1) {
-          // chỉ HH
+          // Chỉ giờ (HH)
           const hh = parts[0];
           query.$and.push({
             $expr: {
@@ -190,7 +192,7 @@ router.get("/", async (req, res) => {
             },
           });
         } else if (parts.length === 2) {
-          // HH:MM
+          // Giờ phút (HH:mm)
           const [hh, mm] = parts;
           query.$and.push({
             $expr: {
@@ -201,7 +203,7 @@ router.get("/", async (req, res) => {
             },
           });
         } else if (parts.length === 3) {
-          // HH:MM:SS
+          // Giờ phút giây (HH:mm:ss)
           const hhmmss = parts.join(":");
           query.$and.push({
             $expr: {
