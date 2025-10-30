@@ -134,3 +134,27 @@ window.fetchStatuses = async function() {
 };
 
 window.logLoaded("API functions"); // Thông báo các hàm API đã tải
+
+// ========== SSE (Server-Sent Events) - cập nhật trạng thái tức thì ==========
+window.setupSSE = function() {
+  try {
+    const es = new EventSource(`${window.API_ROOT}/api/events`);
+    es.addEventListener('device', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        // Khi có sự kiện device_state, gọi fetchStatuses để lấy toàn bộ trạng thái từ RAM cache
+        if (typeof window.fetchStatuses === 'function') {
+          window.fetchStatuses();
+        }
+      } catch (err) {
+        console.error('SSE parse error:', err);
+      }
+    });
+    es.onerror = (err) => {
+      console.warn('SSE error, will keep polling fallback:', err);
+    };
+    console.log('✅ SSE connected');
+  } catch (err) {
+    console.warn('SSE setup failed, fallback to polling only:', err);
+  }
+};
