@@ -7,8 +7,8 @@ const char* ssid = "***REMOVED***";        // Tên mạng WiFi cần kết nối
 const char* password = "***REMOVED***";   // Mật khẩu WiFi
 
 // ========== CẤU HÌNH MQTT BROKER ==========
-const char* mqtt_server = "192.168.180.176";  // Địa chỉ IP của MQTT broker (máy chủ)
-const int mqtt_port = 1883;                   // Cổng MQTT (mặc định 1883)
+const char* mqtt_server = "192.168.0.101";  // Địa chỉ IP của MQTT broker
+const int mqtt_port = 1883;                   // Cổng MQTT
 const char* mqtt_user = "***REMOVED***";           // Tên đăng nhập MQTT
 const char* mqtt_pass = "***REMOVED***";           // Mật khẩu MQTT
 
@@ -28,7 +28,7 @@ PubSubClient client(espClient); // Tạo client MQTT sử dụng WiFi client
 DHT dht(DHTPIN, DHTTYPE);   // Khởi tạo đối tượng cảm biến DHT11
 
 // ========== BIẾN THỜI GIAN ==========
-unsigned long lastMsg = 0;   // Lưu thời điểm gửi message cuối cùng (sử dụng unsigned long để tránh overflow)
+unsigned long lastMsg = 0;   // Lưu thời điểm gửi message cuối cùng
 
 // ========== CẤU HÌNH ADC ==========
 const uint8_t adcBits = 12;       // Độ phân giải ADC của ESP32: 12-bit (0-4095)
@@ -52,6 +52,32 @@ inline void setDeviceState(uint8_t device, bool state) {
 
 // ========== MACRO TÌM KIẾM NHANH ==========
 #define DEVICE_COUNT 3  // Số lượng thiết bị có thể điều khiển
+
+// ========== VALIDATION FUNCTIONS - TỐI ƯU ==========
+// Hàm kiểm tra dữ liệu nhiệt độ hợp lệ
+bool isValidTemperature(float temp) {
+  return !isnan(temp) && temp >= -50.0 && temp <= 100.0;
+}
+
+// Hàm kiểm tra dữ liệu độ ẩm hợp lệ
+bool isValidHumidity(float hum) {
+  return !isnan(hum) && hum >= 0.0 && hum <= 100.0;
+}
+
+// Hàm kiểm tra dữ liệu ánh sáng hợp lệ
+bool isValidLight(uint16_t light) {
+  return light <= 100000;
+}
+
+// ========== ERROR HANDLING - TỐI ƯU ==========
+uint16_t errorCount = 0;           // Đếm số lỗi liên tiếp
+const uint16_t MAX_ERRORS = 10;    // Số lỗi tối đa trước khi restart
+unsigned long lastErrorTime = 0;   // Thời gian lỗi cuối cùng
+const unsigned long ERROR_RESET_TIME = 30000; // 30 giây reset error counter
+
+// ✅ THÊM MỚI: Restart cooldown để tránh restart loop
+unsigned long lastRestartTime = 0;        // Thời gian restart cuối cùng
+const unsigned long RESTART_COOLDOWN = 60000; // 60 giây cooldown giữa các lần restart
 
 // ========== HÀM KẾT NỐI WIFI ==========
 void setup_wifi() {
@@ -82,8 +108,8 @@ void setup_wifi() {
 
 // ========== HÀM GỬI PHẢN HỒI TRẠNG THÁI ==========
 void sendDeviceFeedback(const char* device, const char* state) {
-  char topic[30];
-  snprintf(topic, sizeof(topic), "esp32/%s", device);  // Tạo topic: esp32/dieuhoa, esp32/quat, esp32/den
+  char topic[40];
+  snprintf(topic, sizeof(topic), "esp32/ack/%s", device);  // ACK: esp32/ack/dieuhoa, ack/quat, ack/den
   
   if (client.publish(topic, state, false)) {  // Publish message (retain=false)
     Serial.printf("📤 Phản hồi: %s -> %s\n", topic, state);
@@ -118,7 +144,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // Tìm thiết bị tương ứng trong lookup table
   for (uint8_t i = 0; i < DEVICE_COUNT; i++) {
     char fullTopic[30];
-    snprintf(fullTopic, sizeof(fullTopic), "esp32/%s", devices[i].topicSuffix);
+    snprintf(fullTopic, sizeof(fullTopic), "esp32/cmd/%s", devices[i].topicSuffix);
     
     // So sánh topic nhận được với topic của thiết bị
     if (strcmp(topic, fullTopic) == 0) {
@@ -155,11 +181,11 @@ void reconnect() {
       client.publish("esp32/status", "online", true);
       Serial.println("📤 Đã gửi: esp32/status -> online");
       
-      // Subscribe các topic điều khiển
-      client.subscribe("esp32/dieuhoa");
-      client.subscribe("esp32/quat");
-      client.subscribe("esp32/den");
-      Serial.println("📥 Đã subscribe: esp32/dieuhoa, esp32/quat, esp32/den");
+      // Subscribe các topic điều khiển (kênh CMD)
+      client.subscribe("esp32/cmd/dieuhoa");
+      client.subscribe("esp32/cmd/quat");
+      client.subscribe("esp32/cmd/den");
+      Serial.println("📥 Đã subscribe: esp32/cmd/dieuhoa, esp32/cmd/quat, esp32/cmd/den");
       
       // Yêu cầu đồng bộ trạng thái với database
       client.publish("esp32/sync_request", "sync", false);
@@ -174,10 +200,25 @@ void reconnect() {
   }
 }
 
+// ========== ERROR HANDLING FUNCTIONS ==========
+// Hàm xử lý lỗi MQTT
+void handleMQTTError() {
+  if (!client.connected()) {
+    Serial.println("🔄 MQTT disconnected, attempting reconnect...");
+    reconnect();
+  }
+}
+
+// Hàm reset error counter sau một khoảng thời gian
+void resetErrorCounter() {
+  unsigned long now = millis();
+  if (now - lastErrorTime > ERROR_RESET_TIME) {
+    errorCount = 0;
+    lastErrorTime = now;
+  }
+}
+
 // ========== HÀM SETUP (CHẠY 1 LẦN KHI KHỞI ĐỘNG) ==========
-// - Kết nối WiFi
-// - Kết nối MQTT broker
-// - Cấu hình cảm biến DHT11 và ADC
 void setup() {
   // Khởi tạo Serial Monitor với baudrate 115200
   Serial.begin(115200);
@@ -225,15 +266,18 @@ void setup() {
 void loop() {
   // Kiểm tra kết nối MQTT, reconnect nếu bị mất
   if (!client.connected()) {
-    reconnect();
+    handleMQTTError();
   }
   client.loop();  // Xử lý các message MQTT đến
 
   unsigned long now = millis();
   
-  // Gửi dữ liệu cảm biến mỗi 1 giây (1000ms)
-  if (now - lastMsg >= 1000) {
+  // ✅ TỐI ƯU: Tăng interval từ 1s lên 2s để giảm network traffic
+  if (now - lastMsg >= 2000) {
     lastMsg = now;
+
+    // ✅ THÊM: Kiểm tra kết nối MQTT
+    handleMQTTError();
 
     // ========== ĐỌC CẢM BIẾN DHT11 ==========
     float h = dht.readHumidity();       // Đọc độ ẩm (%)
@@ -244,27 +288,47 @@ void loop() {
     uint16_t rawLight = analogRead(LDR_PIN);
     uint16_t lightValue = map(rawLight, 0, adcMaxValue, adcMaxValue, 0);
 
-    // ========== GỬI DỮ LIỆU LÊN MQTT ==========
-    // Chỉ gửi nhiệt độ và độ ẩm nếu đọc thành công (không NaN)
-    if (!isnan(h) && !isnan(t)) {
-      char tempStr[10], humStr[10];
-      dtostrf(t, 4, 2, tempStr);  // Chuyển float sang string (tiết kiệm RAM)
-      dtostrf(h, 4, 2, humStr);
+    // ========== VALIDATION VÀ GỬI DỮ LIỆU ==========
+    // ✅ TỐI ƯU: Validation dữ liệu và gửi JSON đơn giản
+    if (isValidTemperature(t) && isValidHumidity(h) && isValidLight(lightValue)) {
+      char jsonData[100];
+      snprintf(jsonData, sizeof(jsonData), 
+        "{\"temp\":%.1f,\"hum\":%.1f,\"light\":%d}", t, h, lightValue);
       
-      client.publish("esp32/temperature", tempStr, false);
-      client.publish("esp32/humidity", humStr, false);
+      // ✅ ĐƠN GIẢN: Gửi đến topic cố định cho 1 ESP32
+      client.publish("esp32/sensors", jsonData, false);
+      errorCount = 0; // Reset counter khi OK
+      
+      // Hiển thị dữ liệu trên Serial Monitor
+      Serial.printf("📊 Nhiệt độ: %.1f°C | Độ ẩm: %.1f%% | Ánh sáng: %d Lux | ❤️  Heartbeat\n",
+                    t, h, lightValue);
+    } else {
+      errorCount++;
+      Serial.printf("⚠️ Dữ liệu không hợp lệ: T=%.1f, H=%.1f, L=%d (Error #%d)\n", 
+                     t, h, lightValue, errorCount);
+      
+      // ✅ ERROR HANDLING: Restart ESP32 nếu quá nhiều lỗi (với cooldown)
+      if (errorCount >= MAX_ERRORS) {
+        unsigned long now = millis();
+        
+        // Kiểm tra cooldown để tránh restart loop
+        if (now - lastRestartTime > RESTART_COOLDOWN) {
+          lastRestartTime = now;
+          errorCount = 0; // Reset counter trước khi restart
+          Serial.println("❌ Quá nhiều lỗi dữ liệu, reset ESP32");
+          delay(1000); // Delay 1 giây trước khi restart
+          ESP.restart();
+        } else {
+          Serial.printf("⏳ Restart cooldown active, waiting... (%lu ms remaining)\n", 
+                       RESTART_COOLDOWN - (now - lastRestartTime));
+        }
+      }
     }
-    
-    // Gửi giá trị ánh sáng
-    char lightStr[10];
-    itoa(lightValue, lightStr, 10);
-    client.publish("esp32/light", lightStr, false);
 
-    // Gửi heartbeat để backend biết ESP32 còn hoạt động
+    // ✅ ĐƠN GIẢN: Gửi heartbeat cố định cho 1 ESP32
     client.publish("esp32/heartbeat", "alive", false);
-
-    // Hiển thị dữ liệu trên Serial Monitor
-    Serial.printf("📊 Nhiệt độ: %.1f°C | Độ ẩm: %.1f%% | Ánh sáng: %d Lux | ❤️  Heartbeat\n",
-                  t, h, lightValue);
+    
+    // ✅ TỐI ƯU: Reset error counter sau một khoảng thời gian
+    resetErrorCounter();
   }
 }
