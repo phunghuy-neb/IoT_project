@@ -50,11 +50,11 @@ window.chartConfig = {
 window.performanceConfig = {
   // Polling intervals
   sensorDataInterval: 2000,  // Cập nhật dữ liệu cảm biến mỗi 2 giây
-  statusInterval: 2000,      // Cập nhật trạng thái thiết bị mỗi 2 giây
+  statusInterval: 500,       // Cập nhật trạng thái thiết bị mỗi 0.5 giây (mượt hơn)
   initialDelay: 500,         // Độ trễ ban đầu 500ms
   
   // Cache settings
-  apiCacheTime: 5000,        // Cache API 5 giây
+  apiCacheTime: 3000,        // Cache API 3 giây (tối ưu)
   domCacheTime: 10000,       // Cache DOM 10 giây
   
   // UI settings

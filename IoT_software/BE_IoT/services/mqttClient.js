@@ -2,16 +2,20 @@
 const mqtt = require("mqtt");
 const DataSensor = require("../models/DataSensor");
 const ActionHistory = require("../models/ActionHistory");
+const EventEmitter = require("events");
 require("dotenv").config(); // Load environment variables
 
 // ======================
 // ⚡ Cấu hình MQTT Broker
 // ======================
-const mqttUrl = process.env.MQTT_BROKER_URL || "mqtt://192.168.180.176:1883";
+const mqttUrl = process.env.MQTT_BROKER_URL || "mqtt://192.168.0.101:1883";
 const mqttUsername = process.env.MQTT_USERNAME || "adminiot";
 const mqttPassword = process.env.MQTT_PASSWORD || "adminiot";
 let client;
-let latestData = {}; // lưu tạm dữ liệu cảm biến trước khi ghi DB
+const events = new EventEmitter(); // SSE emitter
+// ✅ SỬA: Quản lý dữ liệu theo từng thiết bị để tránh trùng lặp
+let latestDataPerDevice = new Map(); // Map<deviceId, { temperature, humidity, light }>
+let lastSavedDataPerDevice = new Map(); // Map<deviceId, { data, timestamp }> - chống trùng lặp
 
 // 📌 Trạng thái thiết bị cho Frontend (RAM cache)
 const deviceState = {
@@ -23,7 +27,62 @@ const deviceState = {
 // 📌 Trạng thái kết nối ESP32
 let esp32Connected = false;
 let lastESP32Heartbeat = 0; // Thời gian nhận heartbeat cuối cùng
-const ESP32_TIMEOUT = 1000; // 1 giây timeout - phát hiện mất kết nối ngay lập tức
+const ESP32_TIMEOUT = process.env.ESP32_TIMEOUT || 5000; // 5 giây timeout - tối ưu
+
+// ======================
+// 🔧 HÀM XỬ LÝ DỮ LIỆU THEO THIẾT BỊ
+// ======================
+async function checkAndSaveDeviceData(deviceId, deviceData) {
+  // Kiểm tra đủ 3 sensor values
+  if (
+    Number.isFinite(deviceData.temperature) &&
+    Number.isFinite(deviceData.humidity) &&
+    Number.isFinite(deviceData.light)
+  ) {
+    // ✅ CHỐNG TRÙNG LẶP: Kiểm tra dữ liệu có khác với lần lưu cuối không
+    const lastSaved = lastSavedDataPerDevice.get(deviceId);
+    const now = Date.now();
+    const MIN_SAVE_INTERVAL = 1000; // Tối thiểu 1 giây giữa các lần lưu
+    
+    let shouldSave = true;
+    
+    if (lastSaved) {
+      const timeDiff = now - lastSaved.timestamp;
+      const dataDiff = Math.abs(deviceData.temperature - lastSaved.data.temperature) > 0.1 ||
+                      Math.abs(deviceData.humidity - lastSaved.data.humidity) > 0.1 ||
+                      Math.abs(deviceData.light - lastSaved.data.light) > 1;
+      
+      // Chỉ lưu nếu: thời gian đủ lâu HOẶC dữ liệu khác đáng kể
+      shouldSave = timeDiff >= MIN_SAVE_INTERVAL || dataDiff;
+    }
+    
+    if (shouldSave) {
+      try {
+        await DataSensor.create({
+          deviceId: deviceId,
+          temperature: deviceData.temperature,
+          humidity: deviceData.humidity,
+          light: deviceData.light,
+        });
+        
+        console.log(`💾 Saved DataSensor from ${deviceId}:`, deviceData);
+        
+        // Cập nhật thông tin lưu cuối cùng
+        lastSavedDataPerDevice.set(deviceId, {
+          data: { ...deviceData },
+          timestamp: now
+        });
+        
+        // Reset dữ liệu cho thiết bị này
+        latestDataPerDevice.set(deviceId, {});
+      } catch (err) {
+        console.error(`❌ MongoDB save error (DataSensor) from ${deviceId}:`, err.message);
+      }
+    } else {
+      console.log(`⏭️ Skipped duplicate data from ${deviceId} (too recent or identical)`);
+    }
+  }
+}
 
 // ======================
 // 🔌 Khởi tạo kết nối MQTT
@@ -41,15 +100,19 @@ function initMQTT() {
 
     // Các topic cần subscribe
     const topics = [
+      // ✅ FORMAT CŨ: Hỗ trợ ESP32 cũ (sensors và heartbeat/status)
       "esp32/temperature",
       "esp32/humidity",
       "esp32/light",
-      "esp32/dieuhoa",
-      "esp32/quat",
-      "esp32/den",
-      "esp32/status", // Trạng thái kết nối ESP32
-      "esp32/sync_request", // Yêu cầu đồng bộ từ ESP32
-      "esp32/heartbeat", // Heartbeat từ ESP32
+      "esp32/status",
+      "esp32/sync_request",
+      "esp32/heartbeat",
+
+      // ✅ FORMAT MỚI: JSON format cho 1 ESP32
+      "esp32/sensors",      // esp32/sensors (JSON format)
+
+      // ✅ ACK từ ESP32 sau khi thực thi lệnh
+      "esp32/ack/+",
     ];
 
     client.subscribe(topics, (err) => {
@@ -69,40 +132,66 @@ function initMQTT() {
     console.log(`📩 MQTT: ${topic} -> ${msg}`);
 
     try {
-      // --- Sensor values (expect numeric payloads) ---
-      if (topic === "esp32/temperature") {
-        const v = Number(msg);
-        if (Number.isFinite(v)) latestData.temperature = v;
-        else console.warn("Invalid temperature payload:", msg);
+      // ✅ SỬA MỚI: Xử lý dữ liệu theo từng thiết bị để tránh trùng lặp
+      
+      // --- Format cũ: esp32/temperature, esp32/humidity, esp32/light (backward compatible) ---
+      if (topic === "esp32/temperature" || topic === "esp32/humidity" || topic === "esp32/light") {
+        const deviceId = "esp32_default"; // Default device cho format cũ
+        
+        if (!latestDataPerDevice.has(deviceId)) {
+          latestDataPerDevice.set(deviceId, {});
+        }
+        
+        const deviceData = latestDataPerDevice.get(deviceId);
+        
+        if (topic === "esp32/temperature") {
+          const v = Number(msg);
+          if (Number.isFinite(v)) deviceData.temperature = v;
+          else console.warn("Invalid temperature payload:", msg);
+        }
+        if (topic === "esp32/humidity") {
+          const v = Number(msg);
+          if (Number.isFinite(v)) deviceData.humidity = v;
+          else console.warn("Invalid humidity payload:", msg);
+        }
+        if (topic === "esp32/light") {
+          const v = Number(msg);
+          if (Number.isFinite(v)) deviceData.light = v;
+          else console.warn("Invalid light payload:", msg);
+        }
+        
+        // Kiểm tra và lưu dữ liệu cho thiết bị này
+        await checkAndSaveDeviceData(deviceId, deviceData);
       }
-      if (topic === "esp32/humidity") {
-        const v = Number(msg);
-        if (Number.isFinite(v)) latestData.humidity = v;
-        else console.warn("Invalid humidity payload:", msg);
-      }
-      if (topic === "esp32/light") {
-        const v = Number(msg);
-        if (Number.isFinite(v)) latestData.light = v;
-        else console.warn("Invalid light payload:", msg);
-      }
-
-      // ✅ Khi đủ 3 sensor thì lưu vào MongoDB
-      if (
-        Number.isFinite(latestData.temperature) &&
-        Number.isFinite(latestData.humidity) &&
-        Number.isFinite(latestData.light)
-      ) {
+      
+      // --- Format mới: esp32/sensors (JSON) cho 1 ESP32 ---
+      if (topic === "esp32/sensors") {
+        const deviceId = "esp32_default"; // Đơn giản cho 1 thiết bị
+        
+        if (!latestDataPerDevice.has(deviceId)) {
+          latestDataPerDevice.set(deviceId, {});
+        }
+        
         try {
-          await DataSensor.create({
-            temperature: latestData.temperature,
-            humidity: latestData.humidity,
-            light: latestData.light,
-          });
-          console.log("💾 Saved DataSensor:", latestData);
+          const sensorData = JSON.parse(msg);
+          const deviceData = latestDataPerDevice.get(deviceId);
+          
+          if (sensorData.temp !== undefined && Number.isFinite(sensorData.temp)) {
+            deviceData.temperature = sensorData.temp;
+          }
+          if (sensorData.hum !== undefined && Number.isFinite(sensorData.hum)) {
+            deviceData.humidity = sensorData.hum;
+          }
+          if (sensorData.light !== undefined && Number.isFinite(sensorData.light)) {
+            deviceData.light = sensorData.light;
+          }
+          
+          console.log("📊 JSON sensors data received:", sensorData);
+          
+          // Kiểm tra và lưu dữ liệu
+          await checkAndSaveDeviceData(deviceId, deviceData);
         } catch (err) {
-          console.error("❌ MongoDB save error (DataSensor):", err.message);
-        } finally {
-          latestData = {}; // reset cho vòng sau
+          console.warn("❌ Invalid JSON sensors payload:", msg, err.message);
         }
       }
 
@@ -142,43 +231,38 @@ function initMQTT() {
         return; // Không cần xử lý gì thêm cho heartbeat
       }
 
-      // --- Cập nhật heartbeat cho mọi message từ ESP32 ---
-      if (topic.startsWith("esp32/")) {
+      // --- Chỉ cập nhật heartbeat cho các kênh heartbeat/status ---
+      if (topic === "esp32/heartbeat" || topic === "esp32/status") {
         lastESP32Heartbeat = Date.now();
-        if (!esp32Connected) {
-          esp32Connected = true;
-          console.log("📡 ESP32 detected online via message");
-        }
       }
 
-      // --- Lưu lịch sử điều khiển (ActionHistory) - CHỈ khi ESP32 xác nhận thành công ---
-      if (["esp32/dieuhoa", "esp32/quat", "esp32/den"].includes(topic)) {
+      // --- Lưu lịch sử điều khiển (ActionHistory) khi nhận ACK từ ESP32 ---
+      if (topic.startsWith("esp32/ack/")) {
         try {
-          const device = topic.split("/")[1];
-          
-          // ✅ CHỈ lưu khi ESP32 xác nhận và trạng thái thực sự thay đổi
+          const device = topic.split("/")[2];
+
+          // CHỈ lưu khi trạng thái thực sự thay đổi
           const currentState = deviceState[device] ? deviceState[device].state : "OFF";
           if (currentState !== msg) {
-            await ActionHistory.create({
-              device: device,
-              state: msg,
-            });
-            console.log("💾 ✅ ESP32 CONFIRMED - Saved ActionHistory:", device, `${currentState} -> ${msg}`);
+            await ActionHistory.create({ device, state: msg });
+            console.log("💾 ✅ ACK RECEIVED - Saved ActionHistory:", device, `${currentState} -> ${msg}`);
           } else {
-            console.log("⏭️ ESP32 confirmed but no state change:", device, msg);
+            console.log("⏭️ ACK but no state change:", device, msg);
           }
+
+          // Cập nhật trạng thái thiết bị (RAM cache)
+          if (deviceState[device]) {
+            deviceState[device].state = msg;
+          }
+
+          // Phát sự kiện cho SSE
+          events.emit("device_state", { device, state: msg, timestamp: Date.now() });
         } catch (err) {
           console.error("❌ MongoDB save error (ActionHistory):", err.message);
         }
       }
 
-      // --- Cập nhật trạng thái thiết bị (RAM cache) - SAU khi kiểm tra lưu DB ---
-      if (topic.startsWith("esp32/")) {
-        const key = topic.split("/")[1];
-        if (deviceState[key]) {
-          deviceState[key].state = msg;
-        }
-      }
+      // Không cập nhật deviceState từ các topic khác (tránh echo)
     } catch (err) {
       console.error("❌ Error processing MQTT message:", err);
     }
@@ -224,8 +308,8 @@ async function syncDeviceStatesFromDB() {
       // Cập nhật RAM cache
       deviceState[device].state = state;
       
-      // Gửi lệnh đồng bộ xuống ESP32
-      await publish(`esp32/${device}`, state);
+      // Gửi lệnh đồng bộ xuống ESP32 qua kênh cmd
+      await publish(`esp32/cmd/${device}`, state);
       console.log(`🔄 Synced ${device}: ${state}`);
       
       // Delay nhỏ giữa các lệnh để ESP32 xử lý
@@ -255,6 +339,14 @@ function getESP32Status() {
   return esp32Connected;
 }
 
+function getMqttStatus() {
+  try {
+    return !!(client && client.connected);
+  } catch (e) {
+    return false;
+  }
+}
+
 // Hàm kiểm tra timeout định kỳ
 function checkESP32Timeout() {
   const now = Date.now();
@@ -264,7 +356,21 @@ function checkESP32Timeout() {
   }
 }
 
-// Chạy kiểm tra timeout mỗi 500ms để phát hiện mất kết nối ngay lập tức
-setInterval(checkESP32Timeout, 500);
+// ✅ TỐI ƯU: Quản lý interval để tránh memory leak
+let timeoutInterval;
 
-module.exports = { initMQTT, publish, getDeviceState, getESP32Status };
+function startTimeoutCheck() {
+  if (timeoutInterval) clearInterval(timeoutInterval);
+  timeoutInterval = setInterval(checkESP32Timeout, 1000); // Tăng từ 500ms lên 1s
+}
+
+// ✅ Graceful shutdown
+process.on('SIGINT', () => {
+  if (timeoutInterval) clearInterval(timeoutInterval);
+  process.exit(0);
+});
+
+// Khởi tạo timeout check
+startTimeoutCheck();
+
+module.exports = { initMQTT, publish, getDeviceState, getESP32Status, getMqttStatus, events };
