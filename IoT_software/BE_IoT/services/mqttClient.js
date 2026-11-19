@@ -9,8 +9,8 @@ require("dotenv").config(); // Load environment variables
 // ⚡ Cấu hình MQTT Broker
 // ======================
 const mqttUrl = process.env.MQTT_BROKER_URL || "mqtt://192.168.0.101:1883";
-const mqttUsername = process.env.MQTT_USERNAME || "***REMOVED***";
-const mqttPassword = process.env.MQTT_PASSWORD || "***REMOVED***";
+const mqttUsername = process.env.MQTT_USERNAME;
+const mqttPassword = process.env.MQTT_PASSWORD;
 let client;
 const events = new EventEmitter(); // SSE emitter
 // ✅ SỬA: Quản lý dữ liệu theo từng thiết bị để tránh trùng lặp

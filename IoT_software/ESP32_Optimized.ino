@@ -1,16 +1,17 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <DHT.h>
+#include "secrets.h"  // WIFI_SSID, WIFI_PASSWORD, MQTT_USER, MQTT_PASS (copy secrets.example.h -> secrets.h)
 
 // ========== CẤU HÌNH WIFI ==========
-const char* ssid = "***REMOVED***";        // Tên mạng WiFi cần kết nối
-const char* password = "***REMOVED***";   // Mật khẩu WiFi
+const char* ssid = WIFI_SSID;        // Tên mạng WiFi cần kết nối
+const char* password = WIFI_PASSWORD;   // Mật khẩu WiFi
 
 // ========== CẤU HÌNH MQTT BROKER ==========
 const char* mqtt_server = "10.142.248.176";  // Địa chỉ IP của MQTT broker
 const int mqtt_port = 1883;                   // Cổng MQTT
-const char* mqtt_user = "***REMOVED***";           // Tên đăng nhập MQTT
-const char* mqtt_pass = "***REMOVED***";           // Mật khẩu MQTT
+const char* mqtt_user = MQTT_USER;           // Tên đăng nhập MQTT
+const char* mqtt_pass = MQTT_PASS;           // Mật khẩu MQTT
 
 // ========== KHỞI TẠO CLIENT ==========
 WiFiClient espClient;           // Tạo client WiFi
